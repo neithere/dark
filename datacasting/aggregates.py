@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+#
+#  Copyright (c) 2009 Andy Mikhailenko and contributors
+#
+#  This file is part of Datacasting.
+#
+#  Datacasting is free software under terms of the GNU Lesser
+#  General Public License version 3 (LGPLv3) as published by the Free
+#  Software Foundation. See the file README for copying conditions.
+#
 
 # Usage:
 #     items = dataset.items(dataset.find(name='John'))
@@ -9,36 +18,36 @@
 
 __doc__ = """
 >>> import yaml
->>> items = yaml.load(open('people.yaml'))
+>>> people = yaml.load(open('example_data/people.yaml'))
 
 # All aggregates
 
->>> int(Count().count_for(items))
+>>> int(Count().count_for(people))
 7
->>> int(Avg('age').count_for(items))
-24
->>> int(Min('age').count_for(items))
-2
->>> int(Max('age').count_for(items))
-35
->>> int(Sum('age').count_for(items))
-148
->>> int(Median('age').count_for(items))
-28
+>>> int(Avg('age').count_for(people))
+86
+>>> int(Min('age').count_for(people))
+40
+>>> int(Max('age').count_for(people))
+232
+>>> int(Sum('age').count_for(people))
+1128
+>>> int(Median('age').count_for(people))
+79
 
 # N/A policy
 
->>> str(Sum('age').count_for(items))
-'148'
->>> str(Sum('age', NA.skip).count_for(items))
-'148'
->>> str(Sum('age', NA.reject).count_for(items))
+>>> str(Sum('age').count_for(people))
+'1128'
+>>> str(Sum('age', NA.skip).count_for(people))
+'1128'
+>>> str(Sum('age', NA.reject).count_for(people))
 'None'
->>> str(Min('age').count_for(items))
-'2'
->>> str(Min('age', NA.skip).count_for(items))
-'2'
->>> str(Min('age', NA.reject).count_for(items))
+>>> str(Min('age').count_for(people))
+'40'
+>>> str(Min('age', NA.skip).count_for(people))
+'40'
+>>> str(Min('age', NA.reject).count_for(people))
 'None'
 """
 
@@ -151,7 +160,7 @@ class Count(AggregateManager):
     Counts distinct values for given key. If key is not specified, simply counts
     all items in the query.
     """
-    def __init__(self, key=None, na_policy=NA.skip):
+    def __init__(self, key=None, na_policy=NA.skip):        # TODO: err_policy (skip, raise, set N/A, set 0)
         self.key = key
         self.na_policy = na_policy
         # overload resource-consuming parent method if we can do without it

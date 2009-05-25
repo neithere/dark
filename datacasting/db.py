@@ -1,109 +1,176 @@
 # -*- coding: utf-8 -*-
+#
+#  Copyright (c) 2009 Andy Mikhailenko and contributors
+#
+#  This file is part of Datacasting.
+#
+#  Datacasting is free software under terms of the GNU Lesser
+#  General Public License version 3 (LGPLv3) as published by the Free
+#  Software Foundation. See the file README for copying conditions.
+#
 
-from iterator_cached import CachedIterator
+from iterating import CachedIterator
 from aggregates import *
 
 __doc__ = """
+>>> import datetime
 >>> from aggregates import Avg, Count
 >>> import yaml
->>> data = yaml.load(open('people.yaml'))
+>>> data = yaml.load(open('example_data/people.yaml'))
 >>> people = Dataset(data)
->>> people.inspect() == {'city': 6, 'name': 7, 'gender': 7, 'age': 6, 'job': 5, 'country': 7}
+>>> people.inspect() == {'website': 2, 'city': 14, 'name': 14, 'nick': 4, 'country': 14, 'age': 13, 'born': 13, 'gender': 14, 'occupation': 12}
 True
->>> list( people.find() )
-[<Document 0>, <Document 1>, <Document 2>, <Document 3>, <Document 4>, <Document 5>, <Document 6>]
->>> list( people.find(country=any_) )
-[<Document 0>, <Document 1>, <Document 2>, <Document 3>, <Document 4>, <Document 5>, <Document 6>]
->>> list( people.find(job=any_) )
-[<Document 0>, <Document 1>, <Document 2>, <Document 3>, <Document 4>]
->>> list( people.find(country=not_(None)) )
-[<Document 0>, <Document 1>, <Document 2>, <Document 3>, <Document 4>, <Document 5>, <Document 6>]
->>> list( people.find(country='ru') )
-[<Document 0>, <Document 1>, <Document 2>]
->>> list( people.find(country=not_('ru')) )
-[<Document 3>, <Document 4>, <Document 5>, <Document 6>]
->>> items = people.find(country='ru', gender=not_('m'))   # multiple conditions
->>> len(items)
-1
->>> item = items[0]
+>>> people.find()[3]
+<Document 3>
+>>> len(people.find(country=any_))
+14
+>>> len(people.find(occupation=any_))
+12
+>>> len(people.find(age=not_(None)))
+13
+>>> [p.name for p in people.find(country='England')]
+['Thomas Fowler', 'Alan Mathison Turing']
+>>> len(people.find(country=not_('USA')))
+8
+>>> [p.name for p in people.find(country='USA', gender=not_('male'))]   # multiple conditions
+['Kathleen Antonelli', 'Jean Bartik']
+>>> item = people.all()[0]
 >>> item
-<Document 1>
+<Document 0>
 >>> item._dict == None   # empty dict
 True
 >>> item.name
-'Ksenya'
->>> item._dict == {'gender': 'f', 'age': 24, 'city': 'ekb', 'name': 'Ksenya', 'country': 'ru', 'job': 'teacher'}
+'Richard M. Stallman'
+>>> item._dict == {'name': 'Richard M. Stallman',
+...                'nick': 'rms',
+...                'born': datetime.date(1953, 3, 16),
+...                'age': 56,
+...                'gender': 'male',
+...                'country': 'USA',
+...                'city': 'New York',
+...                'occupation': 'President of the FSF',
+...                'website': 'http://stallman.org'}
 True
 >>> people.values('country')
-['it', 'ru', 'rwanda']
+['England', 'Finland', 'Netherlands', 'New Zealand', 'Norway', 'Sweden', 'Switzerland', 'USA']
 
 # group by country
 >>> for country in people.values('country'):
 ...     print country
-it
-ru
-rwanda
+England
+Finland
+Netherlands
+New Zealand
+Norway
+Sweden
+Switzerland
+USA
 
 # group by country; calculate average age
 >>> for country in people.values('country'):
 ...     documents = people.find(country=country)
 ...     print country, str(Avg('age').count_for(documents))
-it 22.6666666667
-ru 26.6666666667
-rwanda N/A
+England 164.5
+Finland 40.0
+Netherlands 79.0
+New Zealand N/A
+Norway 83.0
+Sweden 102.0
+Switzerland 75.0
+USA 70.0
 
 # group by country; count country population
 >>> for country in sorted(people.values('country')):
 ...     documents = people.find(country=country)
 ...     print country, int(Count().count_for(documents))
-it 3
-ru 3
-rwanda 1
+England 2
+Finland 1
+Netherlands 1
+New Zealand 1
+Norway 1
+Sweden 1
+Switzerland 1
+USA 6
 
 # group by country and city
 >>> for country in people.values('country'):
 ...     for city in people.find(country=country).values('city'):
-...         print country, city
-it firenze
-ru ekb
-ru spb
-rwanda None
+...         print country, '-', city
+England - Great Torrington
+England - Maida Vale, London
+Finland - Helsinki
+Netherlands - Rotterdam
+New Zealand - Auckland
+Norway - Oslo
+Sweden - Stockholm
+Switzerland - Winterthur
+USA - Betty Jean Jennings
+USA - Chicago
+USA - Milwaukee
+USA - New York
+USA - None
+USA - San Jose
 
 # group by country and city; count city population
 >>> for country in people.values('country'):
 ...     for city in people.find(country=country).values('city'):
 ...         documents = people.find(country=country, city=city)
-...         print country, city, int(Count().count_for(documents))
-it firenze 3
-ru ekb 2
-ru spb 1
-rwanda None 0
+...         print '%s, %s (%d)' % (country, city, Count().count_for(documents))
+England, Great Torrington (1)
+England, Maida Vale, London (1)
+Finland, Helsinki (1)
+Netherlands, Rotterdam (1)
+New Zealand, Auckland (1)
+Norway, Oslo (1)
+Sweden, Stockholm (1)
+Switzerland, Winterthur (1)
+USA, Betty Jean Jennings (1)
+USA, Chicago (1)
+USA, Milwaukee (1)
+USA, New York (1)
+USA, None (1)
+USA, San Jose (1)
 
 # group by country, city and gender
 >>> for country in people.values('country'):
 ...     for city in people.find(country=country).values('city'):
 ...         for gender in people.find(country=country, city=city).values('gender'):
-...             print country, city, gender
-it firenze f
-it firenze m
-ru ekb f
-ru ekb m
-ru spb m
+...             print '%s, %s, %s' % (country, city, gender)
+England, Great Torrington, male
+England, Maida Vale, London, male
+Finland, Helsinki, male
+Netherlands, Rotterdam, male
+New Zealand, Auckland, male
+Norway, Oslo, male
+Sweden, Stockholm, male
+Switzerland, Winterthur, male
+USA, Betty Jean Jennings, female
+USA, Chicago, male
+USA, Milwaukee, male
+USA, New York, male
+USA, None, female
+USA, San Jose, male
 
 # group by country, city, and gender; calculate average age
 >>> for country in people.values('country'):
 ...     for city in people.find(country=country).values('city'):
 ...         for gender in people.find(country=country, city=city).values('gender'):
 ...             documents = people.find(country=country, city=city, gender=gender)
-...             print country, city, gender, str(Avg('age').count_for(documents))
-it firenze f 16.5
-it firenze m 35.0
-ru ekb f 24.0
-ru ekb m 25.0
-ru spb m 31.0
->>> ##TODO: list(people.group_by('country'))
->>> ##TODO: list(people.group_by('country', 'city'))
->>> ##TODO: list(people.group_by('country', 'city', 'gender'))
+...             print 'Average %s from %s, %s is %s years old' % (gender, city, country, str(Avg('age').count_for(documents)))
+Average male from Great Torrington, England is 232.0 years old
+Average male from Maida Vale, London, England is 97.0 years old
+Average male from Helsinki, Finland is 40.0 years old
+Average male from Rotterdam, Netherlands is 79.0 years old
+Average male from Auckland, New Zealand is N/A years old
+Average male from Oslo, Norway is 83.0 years old
+Average male from Stockholm, Sweden is 102.0 years old
+Average male from Winterthur, Switzerland is 75.0 years old
+Average female from Betty Jean Jennings, USA is 85.0 years old
+Average male from Chicago, USA is 60.0 years old
+Average male from Milwaukee, USA is 72.0 years old
+Average male from New York, USA is 56.0 years old
+Average female from None, USA is 88.0 years old
+Average male from San Jose, USA is 59.0 years old
 """
 
 # EXCEPTIONS
@@ -183,7 +250,7 @@ class Query(CachedIterator):
     TODO: multi-value lookups ("name=['john','mary']" -- compare list or items in list? maybe "name=in_(['john','mary')"?)
     TODO: date lookups (year, month, day, time, range, cmp)
     """
-    def init(self, dataset, lookups={}, order_by={}, order_reversed=False, **kw):
+    def _init(self, dataset, lookups={}, order_by={}, order_reversed=False, **kw):
         assert isinstance(dataset, Dataset), 'Dataset class provides query methods required for Query to work'
         self._dataset = dataset
         self._lookups = lookups  # XXX people.find(name='john').find(name='mary') -- ?

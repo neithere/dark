@@ -1,6 +1,63 @@
 # -*- coding: utf-8 -*-
+#
+#  Copyright (c) 2009 Andy Mikhailenko and contributors
+#
+#  This file is part of Datacasting.
+#
+#  Datacasting is free software under terms of the GNU Lesser
+#  General Public License version 3 (LGPLv3) as published by the Free
+#  Software Foundation. See the file README for copying conditions.
+#
 
 # Some ideas/code for caching of results are taken from django.db.models.query.QuerySet
+
+__doc__ = """
+>>> make_iterator = lambda: CachedIterator(iterable=(x for x in xrange(1,16)))
+>>> str(make_iterator())
+'[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]'
+>>> [x for x in make_iterator()]
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+
+# CACHED ON __REPR__
+
+>>> eee = make_iterator()
+>>> eee._cache
+[]
+>>> eee
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+>>> eee._cache                   # cache filled after __repr__ call
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+>>> eee._cache = [4,5,6]         # contaminate cache to ensure it is reused
+>>> [x for x in eee]
+[4, 5, 6]
+
+CACHED ON __ITER__
+
+>>> eee = make_iterator()
+>>> [x for x in eee]
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+>>> eee._cache                   # cache filled after __iter__ call
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+>>> eee._cache = 'test'          # contaminate cache to ensure it is reused
+>>> eee
+test
+
+# CHUNKY BACON! CHUNKY BACON!
+
+>>> eee = make_iterator()
+>>> eee[0]                       # indexing is supported
+1
+>>> eee._cache                   # indexing fills cache up by chunks; requested index is within a chunk
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+>>> eee[1]
+2
+>>> eee._cache                   # indexing fills cache up by chunks; requested index is within a chunk
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+>>> eee[10]
+11
+>>> eee._cache                   # index out of chunk borders; next chunk is filled
+[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+"""
 
 ITER_CHUNK_SIZE = 10 # how many items to cache while iterating
 
@@ -8,9 +65,9 @@ class CachedIterator(object):
     def __init__(self, **kw):
         self._iter  = kw.pop('iterable', None)
         self._cache = []
-        self.init(**kw)
+        self._init(**kw)
 
-    def init(self, **kw):
+    def _init(self, **kw):
         pass
 
     #------------------------+
@@ -77,44 +134,6 @@ class CachedIterator(object):
                     self._cache.append(self._prepare_item(self._iter.next()))
             except StopIteration:
                 self._iter = None
-
-def some_iterable():
-    for x in 1,2,3:
-        yield x
-
-__doc__ = """
->>> str(CachedIterator(some_iterable()))
-'[1, 2, 3]'
->>> [x for x in CachedIterator(some_iterable())]
-[1, 2, 3]
->>> ci = CachedIterator(some_iterable())
->>> ci._cache
-[]
->>> ci
-[1, 2, 3]
->>> ci._cache                   # cache filled after __repr__ call
-[1, 2, 3]
->>> ci._cache = [4,5,6]   # contaminate cache to ensure it is reused
->>> [x for x in ci]
-[4, 5, 6]
->>> ci = CachedIterator(some_iterable())
->>> [x for x in ci]
-[1, 2, 3]
->>> ci._cache                   # cache filled after __iter__ call
-[1, 2, 3]
->>> ci._cache = 'test'  # contaminate cache to ensure it is reused
->>> ci
-test
->>> ci = CachedIterator(some_iterable())
->>> ci[0]                       # indexing is supported
-1
->>> ci._cache                   # indexing fills cache up to requested index
-[1]
->>> ci[1]
-2
->>> ci._cache                   # indexing fills cache up to requested index
-[1, 2]
-"""
 
 if __name__=='__main__':
     import doctest

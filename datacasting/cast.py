@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+#
+#  Copyright (c) 2009 Andy Mikhailenko and contributors
+#
+#  This file is part of Datacasting.
+#
+#  Datacasting is free software under terms of the GNU Lesser
+#  General Public License version 3 (LGPLv3) as published by the Free
+#  Software Foundation. See the file README for copying conditions.
+#
 
 import db
 from aggregates import *
@@ -15,7 +24,7 @@ __doc__ = """
 >>> from db import Dataset, in_, not_
 >>> from aggregates import *
 >>> import yaml
->>> data = yaml.load(open('people.yaml'))
+>>> data = yaml.load(open('example_data/people.yaml'))
 >>> people = Dataset(data)
 >>> q = people.all()
 
