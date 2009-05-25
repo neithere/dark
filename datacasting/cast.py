@@ -381,7 +381,7 @@ class CatchAllLevel(object):
     смысл "отливки" (cast) в формировании _табличной_ формы; перед этим делается группировка -- можно её код убрать в Query.
 """
 
-def cast(basic_query, factor_names=None, pivot_factors=None, aggregate=Count()):
+def cast(basic_query, factor_names=None, pivot_factors=None, *aggregates):
     """
     Returns a table summarizing data grouped by given factors.
     Calculates aggregated values. If aggregate is not defined, Count() is used.
@@ -395,6 +395,7 @@ def cast(basic_query, factor_names=None, pivot_factors=None, aggregate=Count()):
     # note: do not declare the lists in func sig or they will migrate between calls :)
     factor_names  = factor_names  or []
     pivot_factors = pivot_factors or []
+    aggregates    = aggregates    or [Count()]
 
     factors = [Factor(n) for n in factor_names]
     for num, factor in enumerate(factors):
@@ -448,10 +449,12 @@ def cast(basic_query, factor_names=None, pivot_factors=None, aggregate=Count()):
         for factor in pivot_factors:
             for level in used_pivot_levels.get(factor,[]):
                 query = last_level.query.find(**{factor:level})
-                row.append(aggregate.count_for(query))
+                for aggregate in aggregates:
+                    row.append(aggregate.count_for(query))
 
-        # insert "total" aggregate (by last real, non-pivot column)
-        row.append(aggregate.count_for(last_level.query))
+        # insert "total" aggregates (by last real, non-pivot column)
+        for aggregate in aggregates:
+            row.append(aggregate.count_for(last_level.query))
 
     # remove catch-all level
     if not factors:
@@ -461,8 +464,14 @@ def cast(basic_query, factor_names=None, pivot_factors=None, aggregate=Count()):
     # generate table heading
     table_heading = factor_names
     for factor in pivot_factors:
-        table_heading.extend(used_pivot_levels.get(factor,[]))
-    table_heading.append(str(aggregate))
+        for level in used_pivot_levels.get(factor,[]):
+            if len(aggregates) < 2:
+                table_heading.append(level)
+            else:
+                for aggregate in aggregates:
+                    table_heading.append('%s %s' % (level, aggregate))
+    for aggregate in aggregates:
+        table_heading.append(str(aggregate))
 
     return [table_heading] + table
 
@@ -479,11 +488,11 @@ def cast_cons(*args, **kwargs):
             if len(maxlens)-1 < col_i:
                 maxlens.append(col_len)
             maxlens[col_i] = max(col_len, maxlens[col_i])
-    _hr = lambda i, row: '+-'+ '+'.join('-'*(2+maxlens[idx]) for idx, cell in enumerate(row))[1:] +'+'
+    _hr = lambda i, row: ' +-'+ '+'.join('-'*(2+maxlens[idx]) for idx, cell in enumerate(row))[1:] +'+'
     _format_cell = lambda val: '%.2f' % val if isinstance(val, float) else unicode(val)
     for i, row in enumerate(table):
         if i == 0: print _hr(i,row)
-        print '| '+ ' | '.join(_format_cell(cell).rjust(maxlens[idx]) for (idx, cell) in enumerate(row)) +' |'
+        print ' | '+ ' | '.join(_format_cell(cell).rjust(maxlens[idx]) for (idx, cell) in enumerate(row)) +' |'
         if i in (0, len(table)-1): print _hr(i,row)
 
 if __name__=='__main__':
