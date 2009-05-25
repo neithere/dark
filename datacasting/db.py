@@ -28,11 +28,19 @@ True
 12
 >>> len(people.find(age=not_(None)))
 13
+>>> len(people.all().exclude(age=None))     # same as previous, different syntax
+13
+>>> people.all().exclude(age=None).count()  # same as previous, yet another syntax
+13
 >>> [p.name for p in people.find(country='England')]
 ['Thomas Fowler', 'Alan Mathison Turing']
+>>> len(people.find(country=exact('England')))      # same as above but faster
+2
 >>> len(people.find(country=not_('USA')))
 8
->>> [p.name for p in people.find(country='USA', gender=not_('male'))]   # multiple conditions
+>>> [p.name for p in people.find(country='USA', gender=not_('male'))]    # multiple conditions
+['Kathleen Antonelli', 'Jean Bartik']
+>>> [p.name for p in people.find(country='USA').exclude(gender='male')]  # same but cleaner
 ['Kathleen Antonelli', 'Jean Bartik']
 >>> item = people.all()[0]
 >>> item
@@ -198,6 +206,10 @@ any_ = not_(None)  # XXX actually "any" means *any*, including nulls :) this one
 class in_(SpecialContainerValue):
     __eq__ = lambda self,other: self._value.__contains__(other)
 
+class exact(SpecialContainerValue):
+    "Does not add any special behaviour to contained value but allows faster lookups."
+    __eq__ = lambda self,other: self._value == other
+
 # DOCUMENT
 
 class Document(object):
@@ -223,8 +235,8 @@ class Document(object):
             return self._dict[name]
         raise AttributeError
     def _assign_attrs(self):
-        for key, val in self._fetch().items():                # XXX make this lazy!!!!!!!!
-            if not key.startswith('_'):
+        for key, val in self._fetch().items():
+            if not key[0] == '_':
                 setattr(self, key, val)
         return self._dict
     def _fetch(self):
@@ -246,9 +258,6 @@ class Query(CachedIterator):
 
      Currently there's only find() method because any exclude(foo=123) is just find(foo=not_(123)).
 
-    TODO: exact lookups.
-          They allow direct lookup via index (very fast!) and do not require iterating
-          over _all_ existing values and comparing each with lookup value.
     TODO: multi-value lookups ("name=['john','mary']" -- compare list or items in list? maybe "name=in_(['john','mary')"?)
     TODO: date lookups (year, month, day, time, range, cmp)
     """
@@ -281,11 +290,16 @@ class Query(CachedIterator):
                      order_by=order_by, order_reversed=order_reversed)
 
     def find(self, **kw):
-        "Returns a new Query instance with existing + given lookups."
+        "Returns a new Query instance with existing plus given lookups."
         return self._clone(extra_lookups=kw)
 
+    def exclude(self, **kw):
+        "Returns a new Query instance with existing minus given lookups."
+        inverted_lookups = dict((k,not_(v)) for k,v in kw.items())
+        return self.find(**inverted_lookups)
+
     def order_by(self, key):
-        if key.startswith('-'):
+        if key[0] == '-':   # a faster way to say .startswith('-')
             key = key[1:]
             rev = True
         else:
@@ -444,10 +458,15 @@ class Dataset(object):
         # intersecting subsets
         for key, value in kw.items():
             found = []
-            for other_value in self.values_by_key(key):
-                if value == other_value: # note: it's not only exact comparison; can be also overloaded
-                    # NOTE: get by other value, not by ours because ours can be pseudo-value
-                    found.extend(self.ids_by_key_and_value(key, other_value))
+            if isinstance(value, exact):
+                # exact match allowed, cut off a corner, grab dict keys and leave
+                found.extend(self.ids_by_key_and_value(key, value._value))
+            else:
+                # gotta compare our value to each other
+                for other_value in self.values_by_key(key):
+                    if value == other_value:
+                        # NOTE: get by the other value because ours can be a pseudo-value
+                        found.extend(self.ids_by_key_and_value(key, other_value))
             if found:
                 ids = ids.intersection(found) if ids else set(found)
         return [] if ids is None else iter(ids)
