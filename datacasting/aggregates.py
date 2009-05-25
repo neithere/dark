@@ -147,7 +147,10 @@ class Sum(AggregateManager):
         return sum(values, 0)
 
 class Count(AggregateManager):
-    "If no key specified, just counts all items."
+    """
+    Counts distinct values for given key. If key is not specified, simply counts
+    all items in the query.
+    """
     def __init__(self, key=None, na_policy=NA.skip):
         self.key = key
         self.na_policy = na_policy
@@ -156,7 +159,7 @@ class Count(AggregateManager):
             self.count_for = self.calc
     @staticmethod
     def calc(values):
-        return len(values)
+        return len(set(values))
 
 if __name__=='__main__':
     import doctest
