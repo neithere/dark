@@ -148,7 +148,7 @@ class Document(object):
     __contains__ = lambda self,key: key in self._fetch()
     __eq__       = lambda self,other: isinstance(other, Document) and other._idx == self._idx
     __getitem__  = lambda self,key: self._fetch()[key]
-    __hash__     = lambda self: hash(self.idx)
+    __hash__     = lambda self: hash(self._idx)
     __int__      = lambda self: self._idx
     __repr__     = lambda self: '<Document %d>' % self._idx
     def __getattr__(self, name):
