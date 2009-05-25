@@ -21,6 +21,15 @@ __doc__ = """
 
 # note: function cast_cons() is a simple wrapper for cast(), prints a basic table
 
+# count, no grouper factors, implicit aggregate
+
+>>> cast_cons(q)
++------------+
+| Count(all) |
++------------+
+|         14 |
++------------+
+
 # count, implicit aggregate
 
 >>> cast_cons(q, ['gender'])
@@ -30,6 +39,23 @@ __doc__ = """
 | female |          2 |
 |   male |         12 |
 +--------+------------+
+
+# count, explicit aggregate
+
+>>> cast_cons(q, ['gender'], [], Count())
++--------+------------+
+| gender | Count(all) |
++--------+------------+
+| female |          2 |
+|   male |         12 |
++--------+------------+
+
+>>> cast_cons(q, [], ['gender'], Count())
++--------+------+------------+
+| female | male | Count(all) |
++--------+------+------------+
+|      2 |   12 |         14 |
++--------+------+------------+
 
 # count, implicit aggregate
 
@@ -106,6 +132,22 @@ __doc__ = """
 |         USA |                None | female |          1 |
 |         USA |            San Jose |   male |          1 |
 +-------------+---------------------+--------+------------+
+
+# explicit custom aggregate, no grouper factor
+
+>>> cast_cons(q, [], [], Avg('age'))
++---------------+
+|      Avg(age) |
++---------------+
+| 86.7692307692 |
++---------------+
+
+>>> cast_cons(q, [], [], Median('age'))
++-------------+
+| Median(age) |
++-------------+
+|          79 |
++-------------+
 
 # aggregate by one key, Avg
 
@@ -289,6 +331,15 @@ class Level(object):
     __unicode__ = lambda self: unicode(self.value)
     __str__ = lambda self: str(self.value)
 
+class CatchAllLevel(object):
+    """"
+    Dummy level representing 'SELECT * FROM ...' query. Inserted into the table
+    if grouper factors are not specified.
+    """
+    def __init__(self, query):
+        self.query = query
+    __unicode__ = __str__ = lambda self: '(all)'
+
 """
     group_by -- по каким ключам сгруппировать данные (ключ идет в заголовок столбца, значение -- в ячейку)
     pivot_by -- по каким значениям дополнительно сгруппировать данные (это уже НЕ pipeline; значение идет в заголовок столбца)
@@ -299,7 +350,7 @@ class Level(object):
     смысл "отливки" (cast) в формировании _табличной_ формы; перед этим делается группировка -- можно её код убрать в Query.
 """
 
-def cast(basic_query, factor_names, pivot_factors=[], aggregate=Count()):
+def cast(basic_query, factor_names=[], pivot_factors=[], aggregate=Count()):
     """
     Returns a table summarizing data grouped by given factors.
     Calculates aggregated values. If aggregate is not defined, Count() is used.
@@ -310,7 +361,6 @@ def cast(basic_query, factor_names, pivot_factors=[], aggregate=Count()):
     # XXX this function actually *groups* data and creates a table.
     #     Move the grouping stuff to Query code as a method?
 
-    assert len(factor_names) > 0
     factors = [Factor(n) for n in factor_names]
     for num, factor in enumerate(factors):
         if num is 0:
@@ -329,11 +379,15 @@ def cast(basic_query, factor_names, pivot_factors=[], aggregate=Count()):
     table = []
     # poll levels of the first factor; they will recursively gather information
     # from attached levels of other factors. This may result in multiple rows per level.
-    for level in factors[0]:
-        level_rows = level.get_rows()
-        for row in level_rows:
-            row_last_level = row[-1]
-            table.append(row)
+    if factors:
+        for level in factors[0]:
+            level_rows = level.get_rows()
+            for row in level_rows:
+                row_last_level = row[-1]
+                table.append(row)
+    else:
+        # a dummy level representing "SELECT * FROM ..." query
+        table.append([CatchAllLevel(basic_query)])
 
     # XXX we do _not_ use hierarchy _within_ pivots. Is this correct?
 
@@ -348,7 +402,7 @@ def cast(basic_query, factor_names, pivot_factors=[], aggregate=Count()):
         for factor in pivot_factors:
             for level in last_level.query.values(factor):
                 query = last_level.query.find(**{factor:level})
-                if pivot_query.count() and level not in used_pivot_levels[factor]:
+                if query.count() and level not in used_pivot_levels[factor]:
                     used_pivot_levels[factor].append(level)
 
     # append aggregated values
@@ -364,6 +418,11 @@ def cast(basic_query, factor_names, pivot_factors=[], aggregate=Count()):
         # insert "total" aggregate (by last real, non-pivot column)
         row.append(aggregate.count_for(last_level.query))
 
+    # remove catch-all level
+    if not factors:
+        for row in table:
+            row.pop(0)
+
     # generate table heading
     table_heading = factor_names
     for factor in pivot_factors:
@@ -373,7 +432,10 @@ def cast(basic_query, factor_names, pivot_factors=[], aggregate=Count()):
     return [table_heading] + table
 
 def cast_cons(*args, **kwargs):
-    "Wrapper for cast function for usage from console. Prints a simplified table using ASCII art. Quick and dirty."
+    """
+    Wrapper for cast function for usage from console. Prints a simplified table
+    using ASCII art. Quick and dirty.
+    """
     table = cast(*args, **kwargs)
     maxlens = []
     for row in table:
