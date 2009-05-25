@@ -219,17 +219,19 @@ class Document(object):
     __int__      = lambda self: self._idx
     __repr__     = lambda self: '<Document %d>' % self._idx
     def __getattr__(self, name):
-        if name in self._fetch():
+        if name in self._assign_attrs():
             return self._dict[name]
         raise AttributeError
+    def _assign_attrs(self):
+        for key, val in self._fetch().items():                # XXX make this lazy!!!!!!!!
+            if not key.startswith('_'):
+                setattr(self, key, val)
+        return self._dict
     def _fetch(self):
         if not self._dict:
             self._dict = self._dataset.doc_by_id(self._idx)
             #for key, val in self._annotations.items():
             #    setattr(self, key, val)
-            for key, val in self._dict.items():
-                if not key.startswith('_'):
-                    setattr(self, key, val)
         return self._dict
 
 # DATASET AND QUERY
@@ -436,21 +438,19 @@ class Dataset(object):
         return self.values_by_key(key).get(value, [])
 
     def ids_by_lookups(self, **kw):
-        for i, item in enumerate(self.data):
-            item = self.data[i]
-            try:
-                for key, value in kw.items():
-                    # item mush have each of the keys specified
-                    if not key in item:
-                        raise ItemDoesNotMatch
-                    # warning: cmp order matters because value can be a SpecialValue instance
-                    # with overloaded comparison method
-                    if value != item[key]:
-                        raise ItemDoesNotMatch
-            except ItemDoesNotMatch:
-                continue
-            else:
-                yield i
+        ids = None
+        if not kw:
+            return iter(xrange(0, len(self.data)))
+        # intersecting subsets
+        for key, value in kw.items():
+            found = []
+            for other_value in self.values_by_key(key):
+                if value == other_value: # note: it's not only exact comparison; can be also overloaded
+                    # NOTE: get by other value, not by ours because ours can be pseudo-value
+                    found.extend(self.ids_by_key_and_value(key, other_value))
+            if found:
+                ids = ids.intersection(found) if ids else set(found)
+        return [] if ids is None else iter(ids)
 
     #-------------------+
     #  Service methods  |
