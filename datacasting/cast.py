@@ -372,7 +372,7 @@ class CatchAllLevel(object):
     смысл "отливки" (cast) в формировании _табличной_ формы; перед этим делается группировка -- можно её код убрать в Query.
 """
 
-def cast(basic_query, factor_names=[], pivot_factors=[], aggregate=Count()):
+def cast(basic_query, factor_names=None, pivot_factors=None, aggregate=Count()):
     """
     Returns a table summarizing data grouped by given factors.
     Calculates aggregated values. If aggregate is not defined, Count() is used.
@@ -382,6 +382,10 @@ def cast(basic_query, factor_names=[], pivot_factors=[], aggregate=Count()):
     
     # XXX this function actually *groups* data and creates a table.
     #     Move the grouping stuff to Query code as a method?
+
+    # note: do not declare the lists in func sig or they will migrate between calls :)
+    factor_names  = factor_names  or []
+    pivot_factors = pivot_factors or []
 
     factors = [Factor(n) for n in factor_names]
     for num, factor in enumerate(factors):
