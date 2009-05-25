@@ -1,0 +1,109 @@
+# A list of famous people related to Computer Science
+- name: Richard M. Stallman
+  nick: rms
+  gender: male
+  born: 1953-03-16
+  age: 56
+  country: USA
+  city: New York
+  occupation: President of the FSF
+  website: http://stallman.org
+- name: Linus Benedict Torvalds
+  gender: male
+  born: 1969-12-28
+  age: 40
+  country: Finland
+  city: Helsinki
+  occupation: Software engineer
+  website: http://torvalds-family.blogspot.com/
+- name: Kathleen Antonelli
+  nick: Kay
+  gender: female
+  born: 1921-02-12
+  age: 88
+  country: USA
+  city: None
+  occupation: original ENIAC programmer 
+- name: Kristen Nygaard
+  nick: null
+  gender: male
+  born: 1926-08-27
+  age: 83
+  country: Norway
+  city: Oslo
+  occupation:
+      - mathematician
+      - polititian
+      - computer language pioneer
+- name: Conrad Palm
+  nick: Conny
+  gender: male
+  born: 1907
+  age: 102
+  country: Sweden
+  city: Stockholm
+- name: Jean Bartik
+  gender: female
+  born: 1924-12-27
+  age: 85
+  country: USA
+  city: Betty Jean Jennings
+  occupation: programmer
+- name: Ross Ihaka
+  gender: male
+  country: New Zealand
+  city: Auckland 
+  occupation: R language author
+- name: Anita Borg
+  gender: male
+  born: 1949-01-17
+  age: 60
+  country: USA
+  city: Chicago
+- name: Thomas Fowler
+  gender: male
+  born: 1777
+  age: 232
+  country: England
+  city: Great Torrington
+  occupation: invented mechanical calculator
+- name: Donald Ervin Knuth
+  gender: male
+  born: 1937-01-10
+  age: 72
+  country: USA
+  city: Milwaukee
+  occupation: computer scientist
+- name: Edsger Wybe Dijkstra
+  gender: male
+  born: 1930-05-11
+  age: 79
+  country: Netherlands
+  city: Rotterdam
+  occupation: computer scientist
+- name: Alan Mathison Turing
+  gender: male
+  born: 1912-06-23
+  age: 97
+  country: England
+  city: Maida Vale, London
+  occupation:
+      - mathematician
+      - logician
+      - cryptanalyst
+      - computer scientist
+- name: Niklaus Emil Wirth
+  gender: male
+  born: 1934-02-15
+  age: 75
+  country: Switzerland
+  city: Winterthur
+  occupation: computer scientist
+- name: Stephen Gary Wozniak
+  nick: Woz
+  gender: male
+  born: 1950-08-11
+  age: 59
+  country: USA
+  city: San Jose
+  occupation: computer engineer

@@ -1,0 +1,116 @@
+
+"Average age for gender per city"
+>>> result = people.cast(['country','city'], ['gender','status'], sum_by('age'))
+>>> result.aggregate
+5123
+>>> [x for x in result]
+[node(ru), node(uk)]
+>>> [x.aggregate for x in result]
+[3535, 1234]
+>>> [y for y in [x for x in result]]
+[[node(ekb), node(msk)], [node(london]]
+
+>>> people.cast([], [], None)
+
+ERROR: Please specify aggregation.
+
+>>> people.cast([], [], count())
+
+    +-------------+
+    | (all)       |            (Note: group_by = group_by or [ALL])
+    +-------------+
+    | 198 426 643 |
+    +-------------+
+
+>>> people.cast([], [], average('age'))
+
+    +-------+
+    | (all) |                  (Note: group_by = group_by or [ALL])
+    +-------+
+    | 75.25 |
+    +-------+
+
+def cast(self, group_by, pivot_by, agg):
+    ids = self.find()
+    table = []
+    table.append('all')
+    table.append(agg(self.items(ids)))
+
+>>> people.cast(['country'], [], average('age'))
+
+    +---------+-------+
+    | COUNTRY | (all) |        (Note: pivot_by = pivot_by or [ALL])
+    +---------+-------+
+    |      RU |  68.5 |
+    |      UK |    82 |
+    +---------+-------+
+
+>>> people.cast([], ['country'], average('age'))
+
+    +------+----+
+    |   ru | uk |
+    +------+----+
+    | 68.5 | 82 |
+    +------+----+
+
+>>> people.cast(['country','city'], [], average('age'))
+
+    +---------+------+-------+
+    | COUNTRY | CITY | (all) |
+    +---------+------+-------+
+    |      RU |  Ekb |    68 |
+    |      RU |  Msk |    69 |
+    |      UK |  Lnd |    82 |
+    +---------+------+-------+
+
+>>> people.cast(['country','city','gender'], [], average('age'))
+
+    +---------+------+--------+-------+
+    | COUNTRY | CITY | GENDER | (all) |
+    +---------+------+--------+-------+
+    |      RU |  Ekb |      m |    68 |
+    |      RU |  Ekb |      f |    71 |
+    |      RU |  Msk |      m |    69 |
+    |      RU |  Msk |      f |    72 |
+    |      UK |  Lnd |      m |    79 |
+    |      UK |  Lnd |      f |    85 |
+    +---------+------+--------+-------+
+
+>>> people.cast(['country','city'], ['gender', ALL], average('age'))
+
+    +---------+------+----+----+-------+
+    | COUNTRY | CITY |  m |  f | (all) |
+    +---------+------+----+----+-------+
+    |      RU |  Ekb | 65 | 71 |    68 |
+    |      RU |  Msk | 66 | 72 |    69 |
+    |      UK |  Lnd | 79 | 85 |    82 |
+    +---------+------+----+----+-------+
+
+>>> people.cast(['country','city'], ['status', 'gender'], average('age'))
+
+    +---------+------+----+----+----+----+
+    | COUNTRY | CITY | married |  single |
+    |         |      +----+----+----+----+
+    |         |      | m  |  f |  m |  f |
+    +---------+------+----+----+----+----+
+    |      RU |  Ekb | 65 | 71 | 64 | 70 |
+    |      RU |  Msk | 66 | 72 | 65 | 71 |
+    |      UK |  Lnd | 79 | 85 | 78 | 84 |
+    +---------+------+----+----+----+----+
+
+group_node("country", "RU")
+    group_node("city", "Ekb")
+        pivot_node("married")
+            pivot_node("man")     # last key in [country,city]+[status,gender], yield aggregate()
+            pivot_node("woman")
+        pivot_node("single")
+            pivot_node("man")
+            pivot_node("woman")
+    group_node("city", "Msk")
+        pivot_node("married")
+            pivot_node("man")
+            pivot_node("woman")
+        pivot_node("single")
+            pivot_node("man")
+            pivot_node("woman")
+
