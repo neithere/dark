@@ -12,7 +12,7 @@ from aggregates import *
 # TODO: see cast() code for more TODOs :)
 
 __doc__ = """
->>> from db import Dataset, not_
+>>> from db import Dataset, in_, not_
 >>> from aggregates import *
 >>> import yaml
 >>> data = yaml.load(open('people.yaml'))
@@ -246,10 +246,10 @@ __doc__ = """
 |      Sweden |                0 |                  0 |        0 |         0 |        0 |    0 |         1 |          0 |    1 |          1 |
 | Switzerland |                0 |                  0 |        0 |         0 |        0 |    0 |         0 |          1 |    1 |          1 |
 +-------------+------------------+--------------------+----------+-----------+----------+------+-----------+------------+------+------------+
-
 """
 
 class Factor(object):
+    "A factor is usually represented as a dictionary key or as a column of a RDB table."
     def __init__(self, key):
         self.key = key
         self.levels = []
@@ -268,6 +268,7 @@ class Factor(object):
         return new_levels
 
 class Level(object):
+    "A factor level, i.e. an existing value."
     def __init__(self, factor, value, query):
         self.value = value
         self.query = query.find(**{factor.key: value})
@@ -334,44 +335,41 @@ def cast(basic_query, factor_names, pivot_factors=[], aggregate=Count()):
             row_last_level = row[-1]
             table.append(row)
 
-    table_heading = factor_names
+    # XXX we do _not_ use hierarchy _within_ pivots. Is this correct?
 
-    used_pivot_levels = {} # will be collected later; only a subset will be actually used
-    
-    # insert pivots XXX we do _not_ use hierarchy _within_ pivots. Is this correct?
+    # XXX this code is almost completely duplicated below, where we insert
+    #     pivot cells and total aggregates into rows. is there a way to unify?
 
-    # what levels are used at all?
+    # collect pivot levels filtered by all grouper factors
+    used_pivot_levels = dict((k,[]) for k in pivot_factors)
     for row in table:
-        #print 'row'
         last_level = row[-1]
+
         for factor in pivot_factors:
-            #print '  pivot factor', factor
-            levels = last_level.query.values(factor)
-            #print '  levels:', levels
-            used_pivot_levels.setdefault(factor, [])
-            for level in levels:
-                #print '    level', level
-                #if level not in used_pivot_levels:
-                #    used_pivot_levels.append(level) # XXX check if there can be any problems with ordering
-                pivot_query = last_level.query.find(**{factor:level})
+            for level in last_level.query.values(factor):
+                query = last_level.query.find(**{factor:level})
                 if pivot_query.count() and level not in used_pivot_levels[factor]:
-                    #print '      count', len(pivot_query), 'and not in', used_pivot_levels[factor]
                     used_pivot_levels[factor].append(level)
+
     # append aggregated values
     for row in table:
         last_level = row[-1] # for pivots and "total" aggregates (after pivots are inserted)
 
-        # INSERT PIVOTS
+        # insert pivot cells
         for factor in pivot_factors:
             for level in used_pivot_levels.get(factor,[]):
                 query = last_level.query.find(**{factor:level})
                 row.append(aggregate.count_for(query))
 
-        # "total" aggregate (by last real, non-pivot column)
+        # insert "total" aggregate (by last real, non-pivot column)
         row.append(aggregate.count_for(last_level.query))
+
+    # generate table heading
+    table_heading = factor_names
     for factor in pivot_factors:
         table_heading.extend(used_pivot_levels.get(factor,[]))
     table_heading.append(str(aggregate))
+
     return [table_heading] + table
 
 def cast_cons(*args, **kwargs):
