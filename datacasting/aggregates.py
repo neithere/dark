@@ -146,12 +146,16 @@ class Sum(AggregateManager):
     def calc(values):
         return sum(values, 0)
 
-# CLASSES THAT DO NOT INHERIT TO AggregateManager
-
-class Count(Aggregate):
-    "A very simple aggregator which does not make use of LazyCalculation."
+class Count(AggregateManager):
+    "If no key specified, just counts all items."
+    def __init__(self, key=None, na_policy=NA.skip):
+        self.key = key
+        self.na_policy = na_policy
+        # overload resource-consuming parent method if we can do without it
+        if not key:
+            self.count_for = self.calc
     @staticmethod
-    def count_for(values):
+    def calc(values):
         return len(values)
 
 if __name__=='__main__':
