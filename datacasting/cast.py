@@ -10,6 +10,7 @@
 #
 
 import db
+import math
 from aggregates import *
 
 # TODO: consider syntax like:
@@ -370,12 +371,17 @@ __doc__ = """
 
 # summary function
 
->>> summary(q,'age')
+>>> summary(q, 'age')
  +-----+-------------+--------+---------------+-------------+-----+
  | min | 1st quarter | median |       average | 3rd quarter | max |
  +-----+-------------+--------+---------------+-------------+-----+
  |  40 | (not impl.) |     79 | 86.7692307692 | (not impl.) | 232 |
  +-----+-------------+--------+---------------+-------------+-----+
+
+# standard deviation function
+
+>>> stdev(q, 'age')
+45.1442133612
 """
 
 class Factor(object):
@@ -575,6 +581,13 @@ def summary(query, key):
         Max(key).count_for(query),
     )
     print_table([head, stats])
+
+def stdev(query, key):
+    "Prints standard deviation for given key in given query."
+    avg = Avg(key).count_for(query)
+    deviations = [d[key] - int(avg) for d in query if key in d]
+    variance = sum(x*x for x in deviations) / float(len(query)-1)
+    return math.sqrt(variance)
 
 if __name__=='__main__':
     import doctest
