@@ -69,7 +69,7 @@ class LazyCalculation(object):
         except TypeError, e:
             raise AggregationError, 'Could not perform %s aggregation on key "%s": '\
                                     'data contains a non-numeric value. Original '\
-                                    'message: %s' % (self.agg.name, self.agg.key, e.message)
+                                    'message: %s' % (self.agg.name(), self.agg.key, e.message)
         return self.result
     __int__     = lambda self: int(self.get_result())
     __str__     = lambda self: str(self.get_result())
