@@ -268,13 +268,17 @@ class Document(object):
 
 class Query(CachedIterator):
     """
+    A Query instance contains description of a custom query against a Dataset
+    instance. Queries are executed lazily: no 
+    
+
+    Usage example:
+    
     people.find(name='John').exclude(lastname='Connor').values_for('country').annotate(Avg('age'))
     
           people.find(name='john').find(last_name='connor').exclude(location='new york')
                 |                 |                       |
      __dataset__|__query__________|__query________________|__query____________________
-
-     Currently there's only find() method because any exclude(foo=123) is just find(foo=not_(123)).
 
     TODO: multi-value lookups ("name=['john','mary']" -- compare list or items in list? maybe "name=in_(['john','mary')"?)
     TODO: date lookups (year, month, day, time, range, cmp)
@@ -294,9 +298,74 @@ class Query(CachedIterator):
         # cache
         self._ids = None
 
-    # XXX this is *wrong*: it displays query.full() but __getitem__ and __iter__ return only IDs!
-    __repr__ = lambda self: str(' '.join(str(x) for x in self))
+    #--------------------------+
+    #   Python Magic Methods   |
+    #--------------------------+
 
+
+    __repr__ = lambda self: list(self)
+
+    __len__ = lambda self: len(self._execute())
+
+    #----------------+
+    #   Public API   |
+    #----------------+
+
+    def count(self):
+        """
+        Returns the number of documents that match the query lookups.
+
+        This method is a syntactic sugar and is exact synonym for __len__.
+
+        Both query.count() and len(query) are equally fast. Both are also faster
+        than len(list(query)) because they do not group, sort or wrap data in
+        Document objects as query.__iter__ does.
+        """
+        return len(self)
+
+    def exclude(self, **kw):
+        "Returns a new Query instance with existing minus given lookups. See find()."
+        inverted_lookups = dict((k,not_(v)) for k,v in kw.items())
+        return self.find(**inverted_lookups)
+
+    def find(self, **kw):
+        """
+        Returns a new Query instance with existing plus given lookups.
+
+        No query is executed on calling this method. Despite database lookups
+        are cheap when the data is stored in the memory, determining intersections
+        between subsets can be time-consuming. This is why the query is only
+        executed when you really need this, i.e. when you want to know the number
+        of results or to iterate over results themselves. The find() method just
+        constructs a new query by copying lightweight metadata.
+        """
+        return self._clone(extra_lookups=kw)
+
+    def order_by(self, key):
+        if key[0] == '-':   # a faster way to say .startswith('-')
+            key = key[1:]
+            rev = True
+        else:
+            rev = False
+        return self._clone(order_by=key, order_reversed=rev)
+
+    def values_for(self, key):
+        """
+        Returns sorted distinct values for given key filtered by current query.
+
+        Method values_for() is a terminal clause, it does not return another lazy
+        Query instance but actually executes the query and returns data extracted
+        from the results. However, it's OK to call query.values_for(...) followed
+        by iteration over query itself because the results are retrieved only once
+        and then reused.
+        """
+        if not self._lookups:
+            return self._dataset.values_for(key)
+        return sorted(d[key] for d in self._dataset.get_docs(self._execute()))
+
+    #---------------------+
+    #   Private methods   |
+    #---------------------+
 
     def _prepare_item(self, item):
         """
@@ -316,23 +385,6 @@ class Query(CachedIterator):
         return Query(dataset=self._dataset, lookups=lookups, aggregates=aggregates, #group_by=group_by,
                      order_by=order_by, order_reversed=order_reversed)
 
-    def find(self, **kw):
-        "Returns a new Query instance with existing plus given lookups."
-        return self._clone(extra_lookups=kw)
-
-    def exclude(self, **kw):
-        "Returns a new Query instance with existing minus given lookups."
-        inverted_lookups = dict((k,not_(v)) for k,v in kw.items())
-        return self.find(**inverted_lookups)
-
-    def order_by(self, key):
-        if key[0] == '-':   # a faster way to say .startswith('-')
-            key = key[1:]
-            rev = True
-        else:
-            rev = False
-        return self._clone(order_by=key, order_reversed=rev)
-
     def _execute(self):
         "Executes the query and returns list of indices of items matching the lookups."
         # TODO: cache results
@@ -348,57 +400,6 @@ class Query(CachedIterator):
             self._ids = list(self._dataset.find_ids(**self._lookups))
             self._executed = True
         return self._ids
-
-    def values_for(self, key):
-        "Returns sorted distinct values for given key filtered by current query."
-        if not self._lookups:
-            return self._dataset.values_for(key)
-        def collect():
-            for i in self._execute():
-                d = self._dataset.get_doc(i)
-                if key in d:
-                    yield d[key]
-        return sorted(collect())
-
-    __len__ = lambda self: len(self._execute())
-
-    def count(self):
-        """
-        Returns the number of documents that match the query lookups.
-
-        This method is a syntactic sugar and is exact synonym for __len__.
-
-        Both query.count() and len(query) are equally fast. Both are also faster
-        than len(list(query)) because they do not group, sort or wrap data in
-        Document objects as query.__iter__ does.
-        """
-        return len(self)
-
-    #def aggregate(self, agg):
-    #    assert isinstance(agg, Aggregate)
-    #    return self.clone(extra_aggregates=[agg])
-    '''
-    def group_by(self, *args): #, **kw):
-        """
-        Groups results by given keys. Calculates given aggregates.
-
-
-        for group in people.all().group_by('country', 'city', 'gender', avg_age=Avg('age')):
-            # normal document with aggregate applied to group (i.e. query expressing a "country+city+gender" group)
-            print group.country, group.city, group.gender, group.avg_age
-        """
-        keys = []
-        aggs = []
-        for arg in args:
-            if isinstance(arg, str):
-                keys.append(arg)
-            elif isinstance(arg, Aggregate):
-                aggs.append(arg)
-            else:
-                raise TypeError, 'expected string or Aggregate instance, got %s' % arg
-        assert keys
-        return self._clone(group_by=keys, extra_aggregates=aggs)
-    '''
 
     def _prepare(self):
         """
@@ -445,6 +446,32 @@ class Query(CachedIterator):
             #ids = self._to_list()
             self._iter = iter(self._order_results(ids))
 
+    #def aggregate(self, agg):
+    #    assert isinstance(agg, Aggregate)
+    #    return self.clone(extra_aggregates=[agg])
+    '''
+    def group_by(self, *args): #, **kw):
+        """
+        Groups results by given keys. Calculates given aggregates.
+
+
+        for group in people.all().group_by('country', 'city', 'gender', avg_age=Avg('age')):
+            # normal document with aggregate applied to group (i.e. query expressing a "country+city+gender" group)
+            print group.country, group.city, group.gender, group.avg_age
+        """
+        keys = []
+        aggs = []
+        for arg in args:
+            if isinstance(arg, str):
+                keys.append(arg)
+            elif isinstance(arg, Aggregate):
+                aggs.append(arg)
+            else:
+                raise TypeError, 'expected string or Aggregate instance, got %s' % arg
+        assert keys
+        return self._clone(group_by=keys, extra_aggregates=aggs)
+    '''
+
     def _order_results(self, ids):
         # iterate over all possible distinct values for the key by which we sort
         values = sorted(self._dataset.values_for(self._order_by))
@@ -461,7 +488,22 @@ class Dataset(object):
     """
     A query tool for list of dictionaries.
     Currently only 'flat' (i.e. not nested) dictionaries are supported.
-    Data items are not immutable, but if you modify them, you have to rebuild indices manually.
+
+    Changing the data
+    -----------------
+
+    Dataset is intended for data analysis, not collecting data. This is why
+    is does not provide any update/store methods. Dictionaries are not immutable
+    but are indexed and cached. If you edit the data within a Dataset instance,
+    the index and cache will go out of sync. After and update you will have to
+    abandon all existing Query objects because they fetch data once and then
+    cache the results until are destroyed themselves. You will also have
+    to rebuild Dataset index manually by calling Dataset._build_index().
+    This operation is time-consuming, so you will not want to perform it too
+    frequently. While it is possible that in the future an updated Document
+    instance would automatically efficiently update the corresponding Dataset
+    index (remove/add parts), currently it's not the case.
+    Also remember to manually save Dataset.data to a file or DB after changing it.
     """
     def __init__(self, data):
         if __debug__: print 'initializing dataset...'
@@ -489,7 +531,7 @@ class Dataset(object):
         "Returns a dictionary by list index."
         return self.data[i]
 
-    def docs_by_ids(self, ids):
+    def get_docs(self, ids):
         "Generates a list dictionaries by their indices in the main list (data)."
         return (self.data[i] for i in ids)
 

@@ -3,4 +3,5 @@
 \.egg-info
 \.directory
 \.pyc$
+\.pyo$
 ~$
