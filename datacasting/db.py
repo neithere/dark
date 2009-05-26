@@ -36,6 +36,10 @@ True
 13
 >>> people.all().exclude(age=None).count()  # same as previous, yet another syntax
 13
+>>> people.find(country='England')
+[<Document 8>, <Document 11>]
+>>> repr(people.find(country='England'))
+'[<Document 8>, <Document 11>]'
 >>> [p.name for p in people.find(country='England')]
 ['Thomas Fowler', 'Alan Mathison Turing']
 >>> len(people.find(country=exact('England')))      # same as above but faster
@@ -303,7 +307,7 @@ class Query(CachedIterator):
     #--------------------------+
 
 
-    __repr__ = lambda self: list(self)
+    __repr__ = lambda self: unicode(list(self))
 
     __len__ = lambda self: len(self._execute())
 
