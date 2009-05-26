@@ -367,6 +367,15 @@ __doc__ = """
  |         USA |   Woz |           1 |
  |         USA |   rms |           1 |
  +-------------+-------+-------------+
+
+# summary function
+
+>>> summary(q,'age')
+ +-----+-------------+--------+---------------+-------------+-----+
+ | min | 1st quarter | median |       average | 3rd quarter | max |
+ +-----+-------------+--------+---------------+-------------+-----+
+ |  40 | (not impl.) |     79 | 86.7692307692 | (not impl.) | 232 |
+ +-----+-------------+--------+---------------+-------------+-----+
 """
 
 class Factor(object):
@@ -533,7 +542,10 @@ def cast_cons(*args, **kwargs):
     Wrapper for cast function for usage from console. Prints a simplified table
     using ASCII art. Quick and dirty.
     """
-    table = cast(*args, **kwargs)
+    print_table(cast(*args, **kwargs))
+
+def print_table(table):
+    "Prints a list of lists as a nice-looking ASCII table."
     maxlens = []
     for row in table:
         for col_i, col in enumerate(row):
@@ -547,6 +559,22 @@ def cast_cons(*args, **kwargs):
         if i == 0: print _hr(i,row)
         print ' | '+ ' | '.join(_format_cell(cell).rjust(maxlens[idx]) for (idx, cell) in enumerate(row)) +' |'
         if i in (0, len(table)-1): print _hr(i,row)
+
+def summary(query, key):
+    """
+    Prints a summary for given key in given query.
+    (see 'summary' function in R language).
+    """
+    head = ('min', '1st quarter', 'median', 'average', '3rd quarter', 'max')
+    stats = (
+        Min(key).count_for(query),
+        '(not impl.)',                 # TODO: 1st quarter
+        Median(key).count_for(query),
+        Avg(key).count_for(query),
+        '(not impl.)',                 # TODO: 3rd quarter
+        Max(key).count_for(query),
+    )
+    print_table([head, stats])
 
 if __name__=='__main__':
     import doctest
