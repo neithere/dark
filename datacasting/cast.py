@@ -336,7 +336,7 @@ class Factor(object):
         Warning: query uniqueness is not checked. If same query provided twice,
         duplicates will occur.
         """
-        new_levels = [Level(self,val,query) for val in query.values(self.key)]
+        new_levels = [Level(self,val,query) for val in query.values_for(self.key)]
         self.levels.extend(new_levels)
         return new_levels
 
@@ -436,7 +436,7 @@ def cast(basic_query, factor_names=None, pivot_factors=None, *aggregates):
         last_level = row[-1]
 
         for factor in pivot_factors:
-            for level in last_level.query.values(factor):
+            for level in last_level.query.values_for(factor):
                 query = last_level.query.find(**{factor:level})
                 if query.count() and level not in used_pivot_levels[factor]:
                     used_pivot_levels[factor].append(level)

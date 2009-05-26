@@ -20,6 +20,10 @@ __doc__ = """
 >>> people = Dataset(data)
 >>> people.inspect() == {'website': 2, 'city': 14, 'name': 14, 'nick': 4, 'country': 14, 'age': 13, 'born': 13, 'gender': 14, 'occupation': 12}
 True
+>>> len(people.all())   # results are found
+14
+>>> len(people.all())   # iterator is not exhausted
+14
 >>> people.find()[3]
 <Document 3>
 >>> len(people.find(country=any_))
@@ -59,11 +63,11 @@ True
 ...                'occupation': 'President of the FSF',
 ...                'website': 'http://stallman.org'}
 True
->>> people.values('country')
+>>> people.values_for('country')
 ['England', 'Finland', 'Netherlands', 'New Zealand', 'Norway', 'Sweden', 'Switzerland', 'USA']
 
 # group by country
->>> for country in people.values('country'):
+>>> for country in people.values_for('country'):
 ...     print country
 England
 Finland
@@ -75,7 +79,7 @@ Switzerland
 USA
 
 # group by country; calculate average age
->>> for country in people.values('country'):
+>>> for country in people.values_for('country'):
 ...     documents = people.find(country=country)
 ...     print country, str(Avg('age').count_for(documents))
 England 164.5
@@ -88,7 +92,7 @@ Switzerland 75.0
 USA 70.0
 
 # group by country; count country population
->>> for country in sorted(people.values('country')):
+>>> for country in sorted(people.values_for('country')):
 ...     documents = people.find(country=country)
 ...     print country, int(Count().count_for(documents))
 England 2
@@ -101,8 +105,8 @@ Switzerland 1
 USA 6
 
 # group by country and city
->>> for country in people.values('country'):
-...     for city in people.find(country=country).values('city'):
+>>> for country in people.values_for('country'):
+...     for city in people.find(country=country).values_for('city'):
 ...         print country, '-', city
 England - Great Torrington
 England - Maida Vale, London
@@ -120,8 +124,8 @@ USA - None
 USA - San Jose
 
 # group by country and city; count city population
->>> for country in people.values('country'):
-...     for city in people.find(country=country).values('city'):
+>>> for country in people.values_for('country'):
+...     for city in people.find(country=country).values_for('city'):
 ...         documents = people.find(country=country, city=city)
 ...         print '%s, %s (%d)' % (country, city, Count().count_for(documents))
 England, Great Torrington (1)
@@ -140,9 +144,9 @@ USA, None (1)
 USA, San Jose (1)
 
 # group by country, city and gender
->>> for country in people.values('country'):
-...     for city in people.find(country=country).values('city'):
-...         for gender in people.find(country=country, city=city).values('gender'):
+>>> for country in people.values_for('country'):
+...     for city in people.find(country=country).values_for('city'):
+...         for gender in people.find(country=country, city=city).values_for('gender'):
 ...             print '%s, %s, %s' % (country, city, gender)
 England, Great Torrington, male
 England, Maida Vale, London, male
@@ -160,9 +164,9 @@ USA, None, female
 USA, San Jose, male
 
 # group by country, city, and gender; calculate average age
->>> for country in people.values('country'):
-...     for city in people.find(country=country).values('city'):
-...         for gender in people.find(country=country, city=city).values('gender'):
+>>> for country in people.values_for('country'):
+...     for city in people.find(country=country).values_for('city'):
+...         for gender in people.find(country=country, city=city).values_for('gender'):
 ...             documents = people.find(country=country, city=city, gender=gender)
 ...             print 'Average %s from %s, %s is %s years old' % (gender, city, country, str(Avg('age').count_for(documents)))
 Average male from Great Torrington, England is 232.0 years old
@@ -210,9 +214,23 @@ class exact(SpecialContainerValue):
     "Does not add any special behaviour to contained value but allows faster lookups."
     __eq__ = lambda self,other: self._value == other
 
+class gt(SpecialContainerValue):
+    "EXPERIMENTAL"\
+    " people.find(born=gt('1900-01-01')) --> all people born since 1st January 1900"
+    def __eq__(self, other):
+        # special case: date
+        if isinstance(other, (datetime.date, datetime.datetime)):
+            if not ininstance(self._value, (datetime.date, datetime.datetime)):
+                v = datetime.date(self._value)
+                return other < v
+        # all other cases
+        else:
+            return other < self._value
+
 # DOCUMENT
 
 class Document(object):
+    "A lazy wrapper for a Dataset item (i.e. a dictionary with numeric identifier)."
     def __init__(self, dataset, idx):   #, annotations):
         assert isinstance(dataset, Dataset), 'Dataset instance expected, got %s' % dataset
         assert isinstance(idx, int), 'integer expected, got %s' % idx
@@ -223,7 +241,7 @@ class Document(object):
     get    = lambda self, k,v: self._fetch().get(k,v)
     items  = lambda self: self._fetch().items()
     keys   = lambda self: self._fetch().keys()
-    values = lambda self: self._fetch().values()
+    values = lambda self: self._fetch().values_for()
     __contains__ = lambda self,key: key in self._fetch()
     __eq__       = lambda self,other: isinstance(other, Document) and other._idx == self._idx
     __getitem__  = lambda self,key: self._fetch()[key]
@@ -241,7 +259,7 @@ class Document(object):
         return self._dict
     def _fetch(self):
         if not self._dict:
-            self._dict = self._dataset.doc_by_id(self._idx)
+            self._dict = self._dataset.get_doc(self._idx)
             #for key, val in self._annotations.items():
             #    setattr(self, key, val)
         return self._dict
@@ -250,7 +268,7 @@ class Document(object):
 
 class Query(CachedIterator):
     """
-    people.find(name='John').exclude(lastname='Connor').values('country').annotate(Avg('age'))
+    people.find(name='John').exclude(lastname='Connor').values_for('country').annotate(Avg('age'))
     
           people.find(name='john').find(last_name='connor').exclude(location='new york')
                 |                 |                       |
@@ -270,17 +288,26 @@ class Query(CachedIterator):
         #self._group_by = group_by
         self._order_by = order_by
         self._order_reversed = order_reversed
+        # cache flags
+        self._executed = False
         self._prepared = False
+        # cache
+        self._ids = None
 
     # XXX this is *wrong*: it displays query.full() but __getitem__ and __iter__ return only IDs!
     __repr__ = lambda self: str(' '.join(str(x) for x in self))
 
 
     def _prepare_item(self, item):
-        "wrap dicts in objects allowing to represent them as indices and retrieve real dicts lazily on first __getitem__ or __getattr__"
+        """
+        Wraps given dictionary in Document object. This allows to represent it as
+        integer and retrieve real dictionary lazily on first __getitem__ or __getattr__.
+        """
         return Document(self._dataset, item)#, aggregates=self._calculated_aggregates)
 
     def _clone(self, extra_lookups={}, extra_aggregates=[], group_by=[], order_by=None, order_reversed=False):
+        # XXX TODO: if this query was already executed, pass the results to the cloned
+        #           and let is just apply new lookups, not do the work from scratch
         lookups = self._lookups.copy()
         lookups.update(**extra_lookups)
         aggregates = self._aggregates + list(extra_aggregates)
@@ -305,6 +332,47 @@ class Query(CachedIterator):
         else:
             rev = False
         return self._clone(order_by=key, order_reversed=rev)
+
+    def _execute(self):
+        "Executes the query and returns list of indices of items matching the lookups."
+        # TODO: cache results
+        #      (it's not that easy as we may return generators; simply saving them
+        #      will exhaust the iterator without proper caching, tests will fail.)
+        
+        if __debug__: print 'Query._execute()'
+        if not self._executed:
+            # We will iterate over IDs and decorate them with Document objects
+            # on the fly using the self._prepare_item() method (called by our
+            # superclass).
+
+            self._ids = list(self._dataset.find_ids(**self._lookups))
+            self._executed = True
+        return self._ids
+
+    def values_for(self, key):
+        "Returns sorted distinct values for given key filtered by current query."
+        if not self._lookups:
+            return self._dataset.values_for(key)
+        def collect():
+            for i in self._execute():
+                d = self._dataset.get_doc(i)
+                if key in d:
+                    yield d[key]
+        return sorted(collect())
+
+    __len__ = lambda self: len(self._execute())
+
+    def count(self):
+        """
+        Returns the number of documents that match the query lookups.
+
+        This method is a syntactic sugar and is exact synonym for __len__.
+
+        Both query.count() and len(query) are equally fast. Both are also faster
+        than len(list(query)) because they do not group, sort or wrap data in
+        Document objects as query.__iter__ does.
+        """
+        return len(self)
 
     #def aggregate(self, agg):
     #    assert isinstance(agg, Aggregate)
@@ -332,83 +400,62 @@ class Query(CachedIterator):
         return self._clone(group_by=keys, extra_aggregates=aggs)
     '''
 
-    def values(self, key, flat=False):
-        "Returns sorted distinct values for given key filtered by current query."
-        val_to_id = {}
-        for i in self._dataset.ids_by_lookups(**self._lookups):
-            orig_value = self._dataset.doc_by_id(i).get(key)
-            for value in self._dataset._unwrap_value(orig_value):
-                val_to_id.setdefault(value,[]).append(i)
-        return val_to_id and (flat and sorted(val_to_id).keys() or sorted(val_to_id)) or []
-
-    def count(self):
-        """Returns number of documents that match the query.
-        Note that query.count() is a convenience method, it is not__ faster than len(query)
-        because we must iterate all existing items in order to make non-exact comparison.
-        """
-        return len(self)
-
     def _prepare(self):
-        "Executes the query based on lookups"
-        if not self._prepared:
-            if self._lookups:
-                # collect sets of document IDs using this query's lookups
-                sets = []
-                for k,v in self._lookups.items():
-                    ids = self._dataset.ids_by_lookups(**{k:v})
-                    sets.append(ids)
-                # save intersection between all gathered sets as iterator
-                # (we cannot just merge the lists of IDs because it's not OR but AND)
-                if len(sets) == 1:
-                    self._iter = sets[0]
-                else:
-                    self._iter = reduce(lambda s1,s2: iter(set(s1) & set(s2)), sets)
-            else:
-                self._iter = self._dataset.ids_by_lookups()
-            self._prepared = True
+        """
+        Executes the query based on lookups. Annotates, groups, sorts the results
+        and returns the iterator.
+        """
+        if __debug__: print 'Query._prepare()'
 
-            # annotations
-            #if self._aggregates:
-            #    i = 0
-            #    for agg in self._aggregates:
-            #        name = agg.__class__.__name__.lower() +'_'+ agg.key.lower()
-            #        while name in self._annotations:
-            #            i+=1
-            #            name = name + str(i)
-            #        self._annotations[name] = agg.aggregate(??????)
+        if self._prepared:
+            return
 
-            # grouping
-            '''
-            if self._group_by:
-                lookups = {}
-                for key in self._group_by:
-                    lookups[key] = people.values_by_key('city').keys()
-                    # lookups['country'] = ['ru', 'uk']
-                    # lookups['city'] = ['ekb', 'msk', 'lon']
-                for key in lookups:
-                    query = self._dataset.all()
-                    
-                    query.find(key
-            '''
+        self._prepared = True
+        ids = self._execute()
+        self._iter = iter(ids)
 
-            # XXX grouping vs. sorting???
+        # annotations
+        #if self._aggregates:
+        #    i = 0
+        #    for agg in self._aggregates:
+        #        name = agg.__class__.__name__.lower() +'_'+ agg.key.lower()
+        #        while name in self._annotations:
+        #            i+=1
+        #            name = name + str(i)
+        #        self._annotations[name] = agg.aggregate(??????)
 
-            # sorting
-            if self._order_by:
-                ids = self._to_list()
-                def _order_results():
-                    # iterate over all possible distinct values for the key by which we sort
-                    values = sorted(self._dataset.values_by_key(self._order_by))
-                    if self._order_reversed:
-                        values = reversed(values)
-                    for value in values:
-                        value_ids = self._dataset.ids_by_key_and_value(self._order_by, value)
-                        #intersection = set(self._dataset._index[self._order_by][value]) & set(ids)
-                        for i in value_ids:
-                            if i in ids:
-                                yield i
-                                ids.pop(ids.index(i))   # distinct
-                self._iter = iter(list(_order_results()))
+        # grouping
+        '''
+        if self._group_by:
+            lookups = {}
+            for key in self._group_by:
+                lookups[key] = people.values_for('city').keys()
+                # lookups['country'] = ['ru', 'uk']
+                # lookups['city'] = ['ekb', 'msk', 'lon']
+            for key in lookups:
+                query = self._dataset.all()
+
+                query.find(key
+        '''
+
+        # XXX grouping vs. sorting???
+
+        # sorting
+        if self._order_by:
+            #ids = self._to_list()
+            self._iter = iter(self._order_results(ids))
+
+    def _order_results(self, ids):
+        # iterate over all possible distinct values for the key by which we sort
+        values = sorted(self._dataset.values_for(self._order_by))
+        if self._order_reversed:
+            values = reversed(values)
+        for value in values:
+            value_ids = self._dataset.ids_by(self._order_by, value)
+            for i in value_ids:
+                if i in ids:
+                    yield i
+                    ids.pop(ids.index(i))   # distinct
 
 class Dataset(object):
     """
@@ -417,8 +464,9 @@ class Dataset(object):
     Data items are not immutable, but if you modify them, you have to rebuild indices manually.
     """
     def __init__(self, data):
+        if __debug__: print 'initializing dataset...'
         self.data = data
-        self._rebuild_index()
+        self._build_index()
         #self._rebuild_vectors()
 
     #---------------------+
@@ -426,32 +474,36 @@ class Dataset(object):
     #---------------------+
 
     def find(self, **kw):
-        "Returns indices of all items having given keys (and values, if specified)."
+        "Returns a Query instance with dataset items matching given criteria."
         return Query(dataset=self, lookups=kw)
 
     def all(self):
+        "Returns a Query instance with all dataset items."
         return self.find()
-
-    def values(self, key):
-        return self.all().values(key)
 
     #-------------------+
     #  Basic query API  |
     #-------------------+
 
-    def doc_by_id(self, i):
+    def get_doc(self, i):
+        "Returns a dictionary by list index."
         return self.data[i]
 
-    def docs_by_ids(self, indices):
-        return (self.data[index] for index in indices)
+    def docs_by_ids(self, ids):
+        "Generates a list dictionaries by their indices in the main list (data)."
+        return (self.data[i] for i in ids)
 
-    def values_by_key(self, key):
-        return self._index.get(key, {})
+    def values_for(self, key):
+        "Returns a sorted list of distinct values existing for given key."
+        return self._index_values_by_key.setdefault(key,
+                       sorted( self._index.get(key, {}) ))
 
-    def ids_by_key_and_value(self, key, value):
-        return self.values_by_key(key).get(value, [])
+    def ids_by(self, key, value):
+        "Returns indices of items exactly matching given key and value."
+        return self._index.get(key, {}).get(value, [])
 
-    def ids_by_lookups(self, **kw):
+    def find_ids(self, **kw):
+        "Returns indices of items matching given criteria."
         ids = None
         if not kw:
             return iter(xrange(0, len(self.data)))
@@ -460,13 +512,14 @@ class Dataset(object):
             found = []
             if isinstance(value, exact):
                 # exact match allowed, cut off a corner, grab dict keys and leave
-                found.extend(self.ids_by_key_and_value(key, value._value))
+                found.extend(self.ids_by(key, value._value))
             else:
                 # gotta compare our value to each other
-                for other_value in self.values_by_key(key):
+                for other_value in self.values_for(key):
+                    # TODO: (==, <, >, >=, <=) for scalars and dates
                     if value == other_value:
                         # NOTE: get by the other value because ours can be a pseudo-value
-                        found.extend(self.ids_by_key_and_value(key, other_value))
+                        found.extend(self.ids_by(key, other_value))
             if found:
                 ids = ids.intersection(found) if ids else set(found)
         return [] if ids is None else iter(ids)
@@ -475,25 +528,35 @@ class Dataset(object):
     #  Service methods  |
     #-------------------+
 
-    def _rebuild_index(self):
+    def _build_index(self):
         "Creates index for data. Representation: key -> value -> list_of_IDs."
+        if __debug__: print 'building index...'
+
         self._index = {}
+
+        def unwrap_value(value):
+            "Wraps scalar in list; if value already was a list, it's returned intact."
+            # (one level only. if there are more, will raise TypeError: unhashable type)
+            if isinstance(value, list):
+                return value
+            elif isinstance(value, dict):
+                raise TypeError, 'This program cannot correctly process nested dictionaries within documents, like this one: %s' % unicode(dict)
+            else:
+                return [value]
+            #except TypeError:
+            #    raise TypeError, 'could not index %s=%s' % (key, val)
+
         for i, item in enumerate(self.data):
-            for key in item.keys():
+            for key in item:
                 val = item[key]
                 if val != None:
-                    for v in self._unwrap_value(val):
+                    for v in unwrap_value(val):
                         self._index.setdefault(key, {}).setdefault(v, []).append(i)
 
-    def _unwrap_value(self, value):
-        "Wraps scalar in list; if value already was a list, it's returned intact."
-        # (one level only. if there are more, will raise TypeError: unhashable type)
-        if isinstance(value, list):
-            return value
-        else:
-            return [value]
-        #except TypeError:
-        #    raise TypeError, 'could not index %s=%s' % (key, val)
+        # reset other indices built ad hoc
+        self._index_values_by_key = {}
+
+        if __debug__: print 'done.'
 
     def inspect(self):
         "Shown how many times each key is found in the dataset."
@@ -508,6 +571,7 @@ class Dataset(object):
     #  XXX  TODO  XXX  |
     #------------------+
 
+    '''
     def group_by(self, *keys):
         "Returns items with existing given keys, grouped by these keys."
         #grouped = {}
@@ -528,6 +592,7 @@ class Dataset(object):
                 print '      grouped', grouped
         #return grouped
         return {'all': matches, 'grouped': grouped}
+    '''
 
 if __name__ == '__main__':
     import doctest
