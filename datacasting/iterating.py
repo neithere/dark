@@ -12,7 +12,7 @@
 # Some ideas/code for caching of results are taken from django.db.models.query.QuerySet
 
 __doc__ = """
->>> make_iterator = lambda: CachedIterator(iterable=(x for x in xrange(1,16)))
+>>> make_iterator = lambda: CachedIterator(iterable=(x for x in xrange(1,16)), chunk_size=10)
 >>> str(make_iterator())
 '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]'
 >>> [x for x in make_iterator()]
@@ -59,11 +59,12 @@ test
 [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 """
 
-ITER_CHUNK_SIZE = 10 # how many items to cache while iterating
+ITER_CHUNK_SIZE = 100 # how many items to cache while iterating
 
 class CachedIterator(object):
     def __init__(self, **kw):
         self._iter  = kw.pop('iterable', None)
+        self._chunk_size = kw.pop('chunk_size', ITER_CHUNK_SIZE)
         self._cache = []
         self._init(**kw)
 
@@ -98,7 +99,7 @@ class CachedIterator(object):
         # fill cache up to requested index
         upper = len(self._cache)
         if upper <= idx:
-            self._fill_cache(idx - upper + ITER_CHUNK_SIZE)
+            self._fill_cache(idx - upper + self._chunk_size)
         return self._cache[idx]
 
     def _prepare_item(self, item):
@@ -122,7 +123,7 @@ class CachedIterator(object):
         self._cache = self._cache or [self._prepare_item(x) for x in self._iter]
         return self._cache
 
-    def _fill_cache(self, num=ITER_CHUNK_SIZE):
+    def _fill_cache(self, num=None):
         """
         Fills the result cache with 'num' more entries (or until the results
         iterator is exhausted).
@@ -130,7 +131,7 @@ class CachedIterator(object):
         self._prepare()
         if self._iter:
             try:
-                for i in range(num):
+                for i in range(num or self._chunk_size):
                     self._cache.append(self._prepare_item(self._iter.next()))
             except StopIteration:
                 self._iter = None

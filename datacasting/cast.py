@@ -33,228 +33,228 @@ __doc__ = """
 # count, no grouper factors, implicit aggregate
 
 >>> cast_cons(q)
-+------------+
-| Count(all) |
-+------------+
-|         14 |
-+------------+
+ +------------+
+ | Count(all) |
+ +------------+
+ |         14 |
+ +------------+
 
 # count, implicit aggregate
 
 >>> cast_cons(q, ['gender'])
-+--------+------------+
-| gender | Count(all) |
-+--------+------------+
-| female |          2 |
-|   male |         12 |
-+--------+------------+
+ +--------+------------+
+ | gender | Count(all) |
+ +--------+------------+
+ | female |          2 |
+ |   male |         12 |
+ +--------+------------+
 
 # count, explicit aggregate
 
 >>> cast_cons(q, ['gender'], [], Count())
-+--------+------------+
-| gender | Count(all) |
-+--------+------------+
-| female |          2 |
-|   male |         12 |
-+--------+------------+
+ +--------+------------+
+ | gender | Count(all) |
+ +--------+------------+
+ | female |          2 |
+ |   male |         12 |
+ +--------+------------+
 
 >>> cast_cons(q, ['gender'], [], Count('nick'))
-+--------+-------------+
-| gender | Count(nick) |
-+--------+-------------+
-| female |           1 |
-|   male |           3 |
-+--------+-------------+
+ +--------+-------------+
+ | gender | Count(nick) |
+ +--------+-------------+
+ | female |           1 |
+ |   male |           3 |
+ +--------+-------------+
 
 >>> cast_cons(q, [], ['gender'], Count('nick'))
-+--------+------+-------------+
-| female | male | Count(nick) |
-+--------+------+-------------+
-|      1 |    3 |           4 |
-+--------+------+-------------+
+ +--------+------+-------------+
+ | female | male | Count(nick) |
+ +--------+------+-------------+
+ |      1 |    3 |           4 |
+ +--------+------+-------------+
 
 >>> cast_cons(q, [], ['gender'], Count())
-+--------+------+------------+
-| female | male | Count(all) |
-+--------+------+------------+
-|      2 |   12 |         14 |
-+--------+------+------------+
+ +--------+------+------------+
+ | female | male | Count(all) |
+ +--------+------+------------+
+ |      2 |   12 |         14 |
+ +--------+------+------------+
 
 >>> cast_cons(people.all(), [], ['country'], Count('nick'))
-+---------+---------+-------------+-------------+--------+--------+-------------+-----+-------------+
-| England | Finland | Netherlands | New Zealand | Norway | Sweden | Switzerland | USA | Count(nick) |
-+---------+---------+-------------+-------------+--------+--------+-------------+-----+-------------+
-|     N/A |     N/A |         N/A |         N/A |    N/A |      1 |         N/A |   3 |           4 |
-+---------+---------+-------------+-------------+--------+--------+-------------+-----+-------------+
+ +---------+---------+-------------+-------------+--------+--------+-------------+-----+-------------+
+ | England | Finland | Netherlands | New Zealand | Norway | Sweden | Switzerland | USA | Count(nick) |
+ +---------+---------+-------------+-------------+--------+--------+-------------+-----+-------------+
+ |     N/A |     N/A |         N/A |         N/A |    N/A |      1 |         N/A |   3 |           4 |
+ +---------+---------+-------------+-------------+--------+--------+-------------+-----+-------------+
 
 # count, implicit aggregate
 
 >>> cast_cons(q, ['country'])
-+-------------+------------+
-|     country | Count(all) |
-+-------------+------------+
-|     England |          2 |
-|     Finland |          1 |
-| Netherlands |          1 |
-| New Zealand |          1 |
-|      Norway |          1 |
-|      Sweden |          1 |
-| Switzerland |          1 |
-|         USA |          6 |
-+-------------+------------+
+ +-------------+------------+
+ |     country | Count(all) |
+ +-------------+------------+
+ |     England |          2 |
+ |     Finland |          1 |
+ | Netherlands |          1 |
+ | New Zealand |          1 |
+ |      Norway |          1 |
+ |      Sweden |          1 |
+ | Switzerland |          1 |
+ |         USA |          6 |
+ +-------------+------------+
 
 # count, explicit aggregate
 
 >>> cast_cons(q, ['country'], [], Count())
-+-------------+------------+
-|     country | Count(all) |
-+-------------+------------+
-|     England |          2 |
-|     Finland |          1 |
-| Netherlands |          1 |
-| New Zealand |          1 |
-|      Norway |          1 |
-|      Sweden |          1 |
-| Switzerland |          1 |
-|         USA |          6 |
-+-------------+------------+
+ +-------------+------------+
+ |     country | Count(all) |
+ +-------------+------------+
+ |     England |          2 |
+ |     Finland |          1 |
+ | Netherlands |          1 |
+ | New Zealand |          1 |
+ |      Norway |          1 |
+ |      Sweden |          1 |
+ | Switzerland |          1 |
+ |         USA |          6 |
+ +-------------+------------+
 
 # count, multiple factors (two)
 
 >>> cast_cons(q, ['country','city'], [], Count())
-+-------------+---------------------+------------+
-|     country |                city | Count(all) |
-+-------------+---------------------+------------+
-|     England |    Great Torrington |          1 |
-|     England |  Maida Vale, London |          1 |
-|     Finland |            Helsinki |          1 |
-| Netherlands |           Rotterdam |          1 |
-| New Zealand |            Auckland |          1 |
-|      Norway |                Oslo |          1 |
-|      Sweden |           Stockholm |          1 |
-| Switzerland |          Winterthur |          1 |
-|         USA | Betty Jean Jennings |          1 |
-|         USA |             Chicago |          1 |
-|         USA |           Milwaukee |          1 |
-|         USA |            New York |          1 |
-|         USA |                None |          1 |
-|         USA |            San Jose |          1 |
-+-------------+---------------------+------------+
+ +-------------+---------------------+------------+
+ |     country |                city | Count(all) |
+ +-------------+---------------------+------------+
+ |     England |    Great Torrington |          1 |
+ |     England |  Maida Vale, London |          1 |
+ |     Finland |            Helsinki |          1 |
+ | Netherlands |           Rotterdam |          1 |
+ | New Zealand |            Auckland |          1 |
+ |      Norway |                Oslo |          1 |
+ |      Sweden |           Stockholm |          1 |
+ | Switzerland |          Winterthur |          1 |
+ |         USA | Betty Jean Jennings |          1 |
+ |         USA |             Chicago |          1 |
+ |         USA |           Milwaukee |          1 |
+ |         USA |            New York |          1 |
+ |         USA |                None |          1 |
+ |         USA |            San Jose |          1 |
+ +-------------+---------------------+------------+
 
 # count, multiple factors (three)
 
 >>> cast_cons(q, ['country','city','gender'], [], Count())
-+-------------+---------------------+--------+------------+
-|     country |                city | gender | Count(all) |
-+-------------+---------------------+--------+------------+
-|     England |    Great Torrington |   male |          1 |
-|     England |  Maida Vale, London |   male |          1 |
-|     Finland |            Helsinki |   male |          1 |
-| Netherlands |           Rotterdam |   male |          1 |
-| New Zealand |            Auckland |   male |          1 |
-|      Norway |                Oslo |   male |          1 |
-|      Sweden |           Stockholm |   male |          1 |
-| Switzerland |          Winterthur |   male |          1 |
-|         USA | Betty Jean Jennings | female |          1 |
-|         USA |             Chicago |   male |          1 |
-|         USA |           Milwaukee |   male |          1 |
-|         USA |            New York |   male |          1 |
-|         USA |                None | female |          1 |
-|         USA |            San Jose |   male |          1 |
-+-------------+---------------------+--------+------------+
+ +-------------+---------------------+--------+------------+
+ |     country |                city | gender | Count(all) |
+ +-------------+---------------------+--------+------------+
+ |     England |    Great Torrington |   male |          1 |
+ |     England |  Maida Vale, London |   male |          1 |
+ |     Finland |            Helsinki |   male |          1 |
+ | Netherlands |           Rotterdam |   male |          1 |
+ | New Zealand |            Auckland |   male |          1 |
+ |      Norway |                Oslo |   male |          1 |
+ |      Sweden |           Stockholm |   male |          1 |
+ | Switzerland |          Winterthur |   male |          1 |
+ |         USA | Betty Jean Jennings | female |          1 |
+ |         USA |             Chicago |   male |          1 |
+ |         USA |           Milwaukee |   male |          1 |
+ |         USA |            New York |   male |          1 |
+ |         USA |                None | female |          1 |
+ |         USA |            San Jose |   male |          1 |
+ +-------------+---------------------+--------+------------+
 
 # explicit custom aggregate, no grouper factor
 
 >>> cast_cons(q, [], [], Avg('age'))
-+---------------+
-|      Avg(age) |
-+---------------+
-| 86.7692307692 |
-+---------------+
+ +---------------+
+ |      Avg(age) |
+ +---------------+
+ | 86.7692307692 |
+ +---------------+
 
 >>> cast_cons(q, [], [], Median('age'))
-+-------------+
-| Median(age) |
-+-------------+
-|          79 |
-+-------------+
+ +-------------+
+ | Median(age) |
+ +-------------+
+ |          79 |
+ +-------------+
 
 # aggregate by one key, Avg
 
 >>> cast_cons(q, ['country'], [], Avg('age'))
-+-------------+----------+
-|     country | Avg(age) |
-+-------------+----------+
-|     England |    164.5 |
-|     Finland |     40.0 |
-| Netherlands |     79.0 |
-| New Zealand |      N/A |
-|      Norway |     83.0 |
-|      Sweden |    102.0 |
-| Switzerland |     75.0 |
-|         USA |     70.0 |
-+-------------+----------+
+ +-------------+----------+
+ |     country | Avg(age) |
+ +-------------+----------+
+ |     England |    164.5 |
+ |     Finland |     40.0 |
+ | Netherlands |     79.0 |
+ | New Zealand |      N/A |
+ |      Norway |     83.0 |
+ |      Sweden |    102.0 |
+ | Switzerland |     75.0 |
+ |         USA |     70.0 |
+ +-------------+----------+
 
 # aggregate by one key, Max
 
 >>> cast_cons(q, ['country'], [], Max('age'))
-+-------------+----------+
-|     country | Max(age) |
-+-------------+----------+
-|     England |      232 |
-|     Finland |       40 |
-| Netherlands |       79 |
-| New Zealand |      N/A |
-|      Norway |       83 |
-|      Sweden |      102 |
-| Switzerland |       75 |
-|         USA |       88 |
-+-------------+----------+
+ +-------------+----------+
+ |     country | Max(age) |
+ +-------------+----------+
+ |     England |      232 |
+ |     Finland |       40 |
+ | Netherlands |       79 |
+ | New Zealand |      N/A |
+ |      Norway |       83 |
+ |      Sweden |      102 |
+ | Switzerland |       75 |
+ |         USA |       88 |
+ +-------------+----------+
 
 # aggregate by multiple keys (two)
 
 >>> cast_cons(q, ['country','city'], [], Avg('age'))
-+-------------+---------------------+----------+
-|     country |                city | Avg(age) |
-+-------------+---------------------+----------+
-|     England |    Great Torrington |    232.0 |
-|     England |  Maida Vale, London |     97.0 |
-|     Finland |            Helsinki |     40.0 |
-| Netherlands |           Rotterdam |     79.0 |
-| New Zealand |            Auckland |      N/A |
-|      Norway |                Oslo |     83.0 |
-|      Sweden |           Stockholm |    102.0 |
-| Switzerland |          Winterthur |     75.0 |
-|         USA | Betty Jean Jennings |     85.0 |
-|         USA |             Chicago |     60.0 |
-|         USA |           Milwaukee |     72.0 |
-|         USA |            New York |     56.0 |
-|         USA |                None |     88.0 |
-|         USA |            San Jose |     59.0 |
-+-------------+---------------------+----------+
+ +-------------+---------------------+----------+
+ |     country |                city | Avg(age) |
+ +-------------+---------------------+----------+
+ |     England |    Great Torrington |    232.0 |
+ |     England |  Maida Vale, London |     97.0 |
+ |     Finland |            Helsinki |     40.0 |
+ | Netherlands |           Rotterdam |     79.0 |
+ | New Zealand |            Auckland |      N/A |
+ |      Norway |                Oslo |     83.0 |
+ |      Sweden |           Stockholm |    102.0 |
+ | Switzerland |          Winterthur |     75.0 |
+ |         USA | Betty Jean Jennings |     85.0 |
+ |         USA |             Chicago |     60.0 |
+ |         USA |           Milwaukee |     72.0 |
+ |         USA |            New York |     56.0 |
+ |         USA |                None |     88.0 |
+ |         USA |            San Jose |     59.0 |
+ +-------------+---------------------+----------+
 
 # aggregate by multiple keys (three)
 
 >>> cast_cons(q, ['country','city','gender'], [], Avg('age'))
-+-------------+---------------------+--------+----------+
-|     country |                city | gender | Avg(age) |
-+-------------+---------------------+--------+----------+
-|     England |    Great Torrington |   male |    232.0 |
-|     England |  Maida Vale, London |   male |     97.0 |
-|     Finland |            Helsinki |   male |     40.0 |
-| Netherlands |           Rotterdam |   male |     79.0 |
-| New Zealand |            Auckland |   male |      N/A |
-|      Norway |                Oslo |   male |     83.0 |
-|      Sweden |           Stockholm |   male |    102.0 |
-| Switzerland |          Winterthur |   male |     75.0 |
-|         USA | Betty Jean Jennings | female |     85.0 |
-|         USA |             Chicago |   male |     60.0 |
-|         USA |           Milwaukee |   male |     72.0 |
-|         USA |            New York |   male |     56.0 |
-|         USA |                None | female |     88.0 |
-|         USA |            San Jose |   male |     59.0 |
-+-------------+---------------------+--------+----------+
+ +-------------+---------------------+--------+----------+
+ |     country |                city | gender | Avg(age) |
+ +-------------+---------------------+--------+----------+
+ |     England |    Great Torrington |   male |    232.0 |
+ |     England |  Maida Vale, London |   male |     97.0 |
+ |     Finland |            Helsinki |   male |     40.0 |
+ | Netherlands |           Rotterdam |   male |     79.0 |
+ | New Zealand |            Auckland |   male |      N/A |
+ |      Norway |                Oslo |   male |     83.0 |
+ |      Sweden |           Stockholm |   male |    102.0 |
+ | Switzerland |          Winterthur |   male |     75.0 |
+ |         USA | Betty Jean Jennings | female |     85.0 |
+ |         USA |             Chicago |   male |     60.0 |
+ |         USA |           Milwaukee |   male |     72.0 |
+ |         USA |            New York |   male |     56.0 |
+ |         USA |                None | female |     88.0 |
+ |         USA |            San Jose |   male |     59.0 |
+ +-------------+---------------------+--------+----------+
 
 # multiple aggregates -- NOT YET
 
@@ -263,62 +263,110 @@ __doc__ = """
 # city key not present, level empty, use higher level query
 
 >>> cast_cons(people.find(nick='Kay'), ['name', 'country', 'city'])
-+--------------------+---------+------+------------+
-|               name | country | city | Count(all) |
-+--------------------+---------+------+------------+
-| Kathleen Antonelli |     USA | None |          1 |
-+--------------------+---------+------+------------+
+ +--------------------+---------+------+------------+
+ |               name | country | city | Count(all) |
+ +--------------------+---------+------+------------+
+ | Kathleen Antonelli |     USA | None |          1 |
+ +--------------------+---------+------+------------+
 
 # city key not present, level empty, use higher level query
 
 >>> cast_cons(q.find(nick='Kay'), ['city'])
-+------+------------+
-| city | Count(all) |
-+------+------------+
-| None |          1 |
-+------+------------+
+ +------+------------+
+ | city | Count(all) |
+ +------+------------+
+ | None |          1 |
+ +------+------------+
 
 # PIVOTING
 
 # pivoting by one factor
 
 >>> cast_cons(q, ['country'], ['gender'])
-+-------------+------+--------+------------+
-|     country | male | female | Count(all) |
-+-------------+------+--------+------------+
-|     England |    2 |      0 |          2 |
-|     Finland |    1 |      0 |          1 |
-| Netherlands |    1 |      0 |          1 |
-| New Zealand |    1 |      0 |          1 |
-|      Norway |    1 |      0 |          1 |
-|      Sweden |    1 |      0 |          1 |
-| Switzerland |    1 |      0 |          1 |
-|         USA |    4 |      2 |          6 |
-+-------------+------+--------+------------+
+ +-------------+--------+------+------------+
+ |     country | female | male | Count(all) |
+ +-------------+--------+------+------------+
+ |     England |      0 |    2 |          2 |
+ |     Finland |      0 |    1 |          1 |
+ | Netherlands |      0 |    1 |          1 |
+ | New Zealand |      0 |    1 |          1 |
+ |      Norway |      0 |    1 |          1 |
+ |      Sweden |      0 |    1 |          1 |
+ | Switzerland |      0 |    1 |          1 |
+ |         USA |      2 |    4 |          6 |
+ +-------------+--------+------+------------+
 
 # pivoting by multiple factors, one level
 
 >>> cast_cons(q.find(country='England'), ['country'], ['city', 'gender'])
-+---------+------------------+--------------------+------+------------+
-| country | Great Torrington | Maida Vale, London | male | Count(all) |
-+---------+------------------+--------------------+------+------------+
-| England |                1 |                  1 |    2 |          2 |
-+---------+------------------+--------------------+------+------------+
+ +---------+------------------+--------------------+------+------------+
+ | country | Great Torrington | Maida Vale, London | male | Count(all) |
+ +---------+------------------+--------------------+------+------------+
+ | England |                1 |                  1 |    2 |          2 |
+ +---------+------------------+--------------------+------+------------+
 
 # pivoting by multiple factors, multiple levels
 
 >>> cast_cons(q.find(country=not_('USA')), ['country'], ['city', 'gender'])
-+-------------+------------------+--------------------+----------+-----------+----------+------+-----------+------------+------+------------+
-|     country | Great Torrington | Maida Vale, London | Helsinki | Rotterdam | Auckland | Oslo | Stockholm | Winterthur | male | Count(all) |
-+-------------+------------------+--------------------+----------+-----------+----------+------+-----------+------------+------+------------+
-|     England |                1 |                  1 |        0 |         0 |        0 |    0 |         0 |          0 |    2 |          2 |
-|     Finland |                0 |                  0 |        1 |         0 |        0 |    0 |         0 |          0 |    1 |          1 |
-| Netherlands |                0 |                  0 |        0 |         1 |        0 |    0 |         0 |          0 |    1 |          1 |
-| New Zealand |                0 |                  0 |        0 |         0 |        1 |    0 |         0 |          0 |    1 |          1 |
-|      Norway |                0 |                  0 |        0 |         0 |        0 |    1 |         0 |          0 |    1 |          1 |
-|      Sweden |                0 |                  0 |        0 |         0 |        0 |    0 |         1 |          0 |    1 |          1 |
-| Switzerland |                0 |                  0 |        0 |         0 |        0 |    0 |         0 |          1 |    1 |          1 |
-+-------------+------------------+--------------------+----------+-----------+----------+------+-----------+------------+------+------------+
+ +-------------+----------+------------------+----------+--------------------+------+-----------+-----------+------------+------+------------+
+ |     country | Auckland | Great Torrington | Helsinki | Maida Vale, London | Oslo | Rotterdam | Stockholm | Winterthur | male | Count(all) |
+ +-------------+----------+------------------+----------+--------------------+------+-----------+-----------+------------+------+------------+
+ |     England |        0 |                1 |        0 |                  1 |    0 |         0 |         0 |          0 |    2 |          2 |
+ |     Finland |        0 |                0 |        1 |                  0 |    0 |         0 |         0 |          0 |    1 |          1 |
+ | Netherlands |        0 |                0 |        0 |                  0 |    0 |         1 |         0 |          0 |    1 |          1 |
+ | New Zealand |        1 |                0 |        0 |                  0 |    0 |         0 |         0 |          0 |    1 |          1 |
+ |      Norway |        0 |                0 |        0 |                  0 |    1 |         0 |         0 |          0 |    1 |          1 |
+ |      Sweden |        0 |                0 |        0 |                  0 |    0 |         0 |         1 |          0 |    1 |          1 |
+ | Switzerland |        0 |                0 |        0 |                  0 |    0 |         0 |         0 |          1 |    1 |          1 |
+ +-------------+----------+------------------+----------+--------------------+------+-----------+-----------+------------+------+------------+
+
+# pivoting without grouper factors
+
+>>> cast_cons(q, [], ['country'], Count())
+ +---------+---------+-------------+-------------+--------+--------+-------------+-----+------------+
+ | England | Finland | Netherlands | New Zealand | Norway | Sweden | Switzerland | USA | Count(all) |
+ +---------+---------+-------------+-------------+--------+--------+-------------+-----+------------+
+ |       2 |       1 |           1 |           1 |      1 |      1 |           1 |   6 |         14 |
+ +---------+---------+-------------+-------------+--------+--------+-------------+-----+------------+
+
+# values are unwrapped (in this case some people had more than one occupation)
+
+>>> cast_cons(q, ['occupation'], ['gender'])
+ +--------------------------------+--------+------+------------+
+ |                     occupation | female | male | Count(all) |
+ +--------------------------------+--------+------+------------+
+ |           President of the FSF |      0 |    1 |          1 |
+ |              R language author |      0 |    1 |          1 |
+ |              Software engineer |      0 |    1 |          1 |
+ |              computer engineer |      0 |    1 |          1 |
+ |      computer language pioneer |      0 |    1 |          1 |
+ |             computer scientist |      0 |    4 |          4 |
+ |                   cryptanalyst |      0 |    1 |          1 |
+ | invented mechanical calculator |      0 |    1 |          1 |
+ |                       logician |      0 |    1 |          1 |
+ |                  mathematician |      0 |    2 |          2 |
+ |      original ENIAC programmer |      1 |    0 |          1 |
+ |                     polititian |      0 |    1 |          1 |
+ |                     programmer |      1 |    0 |          1 |
+ +--------------------------------+--------+------+------------+
+
+# all row cells are present regardless of data availability in grouper columns
+
+>>> cast_cons(q, ['country', 'nick'], [], Count('nick'))
+ +-------------+-------+-------------+
+ |     country |  nick | Count(nick) |
+ +-------------+-------+-------------+
+ |     England |  None |         N/A |
+ |     Finland |  None |         N/A |
+ | Netherlands |  None |         N/A |
+ | New Zealand |  None |         N/A |
+ |      Norway |  None |         N/A |
+ |      Sweden | Conny |           1 |
+ | Switzerland |  None |         N/A |
+ |         USA |   Kay |           1 |
+ |         USA |   Woz |           1 |
+ |         USA |   rms |           1 |
+ +-------------+-------+-------------+
 """
 
 class Factor(object):
@@ -333,10 +381,14 @@ class Factor(object):
         """
         Finds factor levels filtered by given query and appends them to the whole
         list of levels. Returns only the newly found levels.
+        
+        If no level could be found, a dummy empty level is inserted so that
+        all columns are present regardless of data availability.
+        
         Warning: query uniqueness is not checked. If same query provided twice,
         duplicates will occur.
         """
-        new_levels = [Level(self,val,query) for val in query.values_for(self.key)]
+        new_levels = [Level(self,val,query) for val in query.values_for(self.key)] or [Level(self,None,query)]
         self.levels.extend(new_levels)
         return new_levels
 
@@ -435,6 +487,7 @@ def cast(basic_query, factor_names=None, pivot_factors=None, *aggregates):
     for row in table:
         last_level = row[-1]
 
+        # collect pivot levels
         for factor in pivot_factors:
             for level in last_level.query.values_for(factor):
                 query = last_level.query.find(**{factor:level})
@@ -447,7 +500,7 @@ def cast(basic_query, factor_names=None, pivot_factors=None, *aggregates):
 
         # insert pivot cells
         for factor in pivot_factors:
-            for level in used_pivot_levels.get(factor,[]):
+            for level in sorted(used_pivot_levels.get(factor,[])):
                 query = last_level.query.find(**{factor:level})
                 for aggregate in aggregates:
                     row.append(aggregate.count_for(query))
@@ -464,7 +517,7 @@ def cast(basic_query, factor_names=None, pivot_factors=None, *aggregates):
     # generate table heading
     table_heading = factor_names
     for factor in pivot_factors:
-        for level in used_pivot_levels.get(factor,[]):
+        for level in sorted(used_pivot_levels.get(factor,[])):
             if len(aggregates) < 2:
                 table_heading.append(level)
             else:

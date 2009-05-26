@@ -365,7 +365,15 @@ class Query(CachedIterator):
         """
         if not self._lookups:
             return self._dataset.values_for(key)
-        return sorted(d[key] for d in self._dataset.get_docs(self._execute()))
+        # get docs for current lookups
+        docs = self._dataset.get_docs(self._execute())
+        # gather values
+        values = []
+        for d in docs:
+            if key in d:
+                values.extend(self._dataset._unwrap_value(d[key]))
+        # make them distinct
+        return sorted(set(values)) # returns list, not set
 
     #---------------------+
     #   Private methods   |
@@ -395,7 +403,6 @@ class Query(CachedIterator):
         #      (it's not that easy as we may return generators; simply saving them
         #      will exhaust the iterator without proper caching, tests will fail.)
         
-        if __debug__: print 'Query._execute()'
         if not self._executed:
             # We will iterate over IDs and decorate them with Document objects
             # on the fly using the self._prepare_item() method (called by our
@@ -410,7 +417,6 @@ class Query(CachedIterator):
         Executes the query based on lookups. Annotates, groups, sorts the results
         and returns the iterator.
         """
-        if __debug__: print 'Query._prepare()'
 
         if self._prepared:
             return
@@ -574,29 +580,29 @@ class Dataset(object):
     #  Service methods  |
     #-------------------+
 
+    def _unwrap_value(self, value):
+        "Wraps scalar in list; if value already was a list, it's returned intact."
+        # (one level only. if there are more, will raise TypeError: unhashable type)
+        if isinstance(value, list):
+            return value
+        elif isinstance(value, dict):
+            raise TypeError, 'This program cannot correctly process nested dictionaries within documents, like this one: %s' % unicode(dict)
+        else:
+            return [value]
+        #except TypeError:
+        #    raise TypeError, 'could not index %s=%s' % (key, val)
+
     def _build_index(self):
         "Creates index for data. Representation: key -> value -> list_of_IDs."
         if __debug__: print 'building index...'
 
         self._index = {}
 
-        def unwrap_value(value):
-            "Wraps scalar in list; if value already was a list, it's returned intact."
-            # (one level only. if there are more, will raise TypeError: unhashable type)
-            if isinstance(value, list):
-                return value
-            elif isinstance(value, dict):
-                raise TypeError, 'This program cannot correctly process nested dictionaries within documents, like this one: %s' % unicode(dict)
-            else:
-                return [value]
-            #except TypeError:
-            #    raise TypeError, 'could not index %s=%s' % (key, val)
-
         for i, item in enumerate(self.data):
             for key in item:
                 val = item[key]
                 if val != None:
-                    for v in unwrap_value(val):
+                    for v in self._unwrap_value(val):
                         self._index.setdefault(key, {}).setdefault(v, []).append(i)
 
         # reset other indices built ad hoc
