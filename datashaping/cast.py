@@ -452,7 +452,7 @@ def cast(basic_query, factor_names=None, pivot_factors=None, *aggregates):
     """
     Returns a table summarizing data grouped by given factors.
     Calculates aggregated values. If aggregate is not defined, Count() is used.
-    Pivoting support is not implemented yet.
+    Supports pivoting (i.e. using factor levels as columns).
     """
     # XXX TODO: multiple aggregates (they will also multiply pivot columns)
     
@@ -565,6 +565,11 @@ def print_table(table):
         if i == 0: print _hr(i,row)
         print ' | '+ ' | '.join(_format_cell(cell).rjust(maxlens[idx]) for (idx, cell) in enumerate(row)) +' |'
         if i in (0, len(table)-1): print _hr(i,row)
+
+def print_table_rotated():
+    "Same as print_table but rotated 90 by degrees clockwise."
+    # XXX this should be an option for cast(), not cast_cons()
+    raise NotImplementedError, 'sorry, table rotation is not supported yet.'
 
 def summary(query, key):
     """
