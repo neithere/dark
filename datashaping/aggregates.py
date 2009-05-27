@@ -32,8 +32,10 @@ __doc__ = """
 232
 >>> int(Sum('age').count_for(people))
 1128
->>> int(Median('age').count_for(people))
-79
+>>> int(Qu1('age').count_for(people))
+56
+>>> int(Qu3('age').count_for(people))
+77
 
 # N/A policy
 
@@ -51,7 +53,7 @@ __doc__ = """
 'None'
 """
 
-__all__ = ['Aggregate', 'Avg', 'Max', 'Median', 'Min', 'Sum', 'Count', 'NA']
+__all__ = ['Aggregate', 'Avg', 'Count', 'Max', 'Median', 'Min', 'Sum', 'Qu1', 'Qu3', 'NA']
 
 class AggregationError(Exception):
     pass
@@ -72,6 +74,7 @@ class LazyCalculation(object):
                                     'message: %s' % (self.agg.name(), self.agg.key, e.message)
         return self.result
     __int__     = lambda self: int(self.get_result())
+    __float__   = lambda self: float(self.get_result())
     __str__     = lambda self: str(self.get_result())
     __repr__    = lambda self: u'<lazy %s by %s>' % (self.agg.name, '%d values'%len(self.values) if len(self.values) > 3 else self.values)
 
@@ -144,6 +147,27 @@ class Median(AggregateManager):
             lower = middle - 1
             upper = middle + 1
             return sum(values[lower:upper]) / 2.0
+
+"""
+Almost as commonly used as the median are the quartiles, q0.25 and
+q0.75. Usually these are called the lower and upper quartiles,
+respectively. They are located halfway between the median, q0.5, and the
+extremes, x(1) and x(n). In typically colorful terminology, Tukey (1977)
+calls q0.25 and q0.75 the 'hinges', imagining that the data set has been
+folded first at the median, and the quartiles.
+-- http://mail.python.org/pipermail/python-list/2002-March/134190.html
+"""
+
+class Qu1(Median):
+    "Calculates the q0.25. (NOTE: stub!)"
+    def calc(self, values):
+        l = len(values) / 4
+        return super(Qu1, self).calc(values[:l])
+class Qu3(Median):
+    "Calculates the q0.75. (NOTE: stub!)"
+    def calc(self, values):
+        l = (len(values) / 4) * 3
+        return super(Qu3, self).calc(values[l:])
 
 class Min(AggregateManager):
     @staticmethod

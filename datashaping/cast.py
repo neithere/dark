@@ -168,11 +168,11 @@ __doc__ = """
 # explicit custom aggregate, no grouper factor
 
 >>> cast_cons(q, [], [], Avg('age'))
- +---------------+
- |      Avg(age) |
- +---------------+
- | 86.7692307692 |
- +---------------+
+ +----------+
+ | Avg(age) |
+ +----------+
+ |     86.8 |
+ +----------+
 
 >>> cast_cons(q, [], [], Median('age'))
  +-------------+
@@ -372,16 +372,16 @@ __doc__ = """
 # summary function
 
 >>> summary(q, 'age')
- +-----+-------------+--------+---------------+-------------+-----+
- | min | 1st quarter | median |       average | 3rd quarter | max |
- +-----+-------------+--------+---------------+-------------+-----+
- |  40 | (not impl.) |     79 | 86.7692307692 | (not impl.) | 232 |
- +-----+-------------+--------+---------------+-------------+-----+
+ +-----+---------+--------+---------+---------+-----+
+ | min | 1st qu. | median | average | 3rd qu. | max |
+ +-----+---------+--------+---------+---------+-----+
+ |  40 |      56 |     79 |    86.8 |    77.0 | 232 |
+ +-----+---------+--------+---------+---------+-----+
 
 # standard deviation function
 
 >>> stdev(q, 'age')
-45.1442133612
+45.14421336118285
 """
 
 class Factor(object):
@@ -552,15 +552,21 @@ def cast_cons(*args, **kwargs):
 
 def print_table(table):
     "Prints a list of lists as a nice-looking ASCII table."
+    def _format_cell(val):
+        # handle lazy calculation (it can be coerced to str/unicode/int/float but we want nicer results)
+        if hasattr(val, 'get_result'):
+            n = val.get_result()
+            if isinstance(n, float):
+                return '%.1f' % n
+        return unicode(val)
     maxlens = []
     for row in table:
         for col_i, col in enumerate(row):
-            col_len = len(str(col))
+            col_len = len(_format_cell(col))
             if len(maxlens)-1 < col_i:
                 maxlens.append(col_len)
             maxlens[col_i] = max(col_len, maxlens[col_i])
     _hr = lambda i, row: ' +-'+ '+'.join('-'*(2+maxlens[idx]) for idx, cell in enumerate(row))[1:] +'+'
-    _format_cell = lambda val: '%.2f' % val if isinstance(val, float) else unicode(val)
     for i, row in enumerate(table):
         if i == 0: print _hr(i,row)
         print ' | '+ ' | '.join(_format_cell(cell).rjust(maxlens[idx]) for (idx, cell) in enumerate(row)) +' |'
@@ -576,13 +582,13 @@ def summary(query, key):
     Prints a summary for given key in given query.
     (see 'summary' function in R language).
     """
-    head = ('min', '1st quarter', 'median', 'average', '3rd quarter', 'max')
+    head = ('min', '1st qu.', 'median', 'average', '3rd qu.', 'max')
     stats = (
         Min(key).count_for(query),
-        '(not impl.)',                 # TODO: 1st quarter
+        Qu1(key).count_for(query),
         Median(key).count_for(query),
         Avg(key).count_for(query),
-        '(not impl.)',                 # TODO: 3rd quarter
+        Qu3(key).count_for(query),
         Max(key).count_for(query),
     )
     print_table([head, stats])
