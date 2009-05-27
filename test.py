@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 from doctest import testmod
-from datacasting import db, aggregates, iterating
+from datashaping import db, aggregates, iterating
 
-print 'TESTING DATACASTING APPLICATION'
+print 'TESTING DATASHAPING APPLICATION'
 
 testmod(aggregates)
 testmod(iterating)
@@ -18,7 +18,7 @@ if __name__ != '__main__':
     print '    Console casting function is available as "c".'
     print '    Try  c(q)  to begin with (after you load a file).'
 
-    from datacasting import *
+    from datashaping import *
 
     c = cast_cons
     def load(filename):
