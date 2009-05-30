@@ -196,6 +196,8 @@ Average male from San Jose, USA is 59.0 years old
 ['Linus Torvalds']
 """
 
+__all__ = ['Dataset', 'Query',   'not_', 'any_', 'in_', 'exact', 'gt']
+
 # NESTING_DELIMITER is a delimiter for indexing and subsequent lookups, e.g.:
 # "foo__bar" matches {'foo':{'bar':123}}.
 # The delimiter can be set to "__" or whatever in order to allow lookups

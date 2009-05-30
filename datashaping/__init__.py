@@ -13,4 +13,4 @@ __version__ = '0.1.0'
 
 from .aggregates import *
 from .db import *
-from .cast import *
+from .shaping import *
