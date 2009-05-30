@@ -586,7 +586,7 @@ class Dataset(object):
         if isinstance(value, list):
             return value
         elif isinstance(value, dict):
-            raise TypeError, 'This program cannot correctly process nested dictionaries within documents, like this one: %s' % unicode(dict)
+            raise TypeError, 'This program cannot correctly process nested dictionaries within documents, like this one: %s' % unicode(value)
         else:
             return [value]
         #except TypeError:
