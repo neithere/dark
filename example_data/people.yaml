@@ -8,7 +8,11 @@
   city: New York
   occupation: President of the FSF
   website: http://stallman.org
-- name: Linus Benedict Torvalds
+- name: Linus Torvalds
+  fullname:
+    first: Linus
+    middle: Benedict
+    last: Torvalds
   gender: male
   born: 1969-12-28
   age: 40
@@ -23,7 +27,7 @@
   age: 88
   country: USA
   city: None
-  occupation: original ENIAC programmer 
+  occupation: original ENIAC programmer
 - name: Kristen Nygaard
   nick: null
   gender: male
@@ -67,7 +71,11 @@
   country: England
   city: Great Torrington
   occupation: invented mechanical calculator
-- name: Donald Ervin Knuth
+- name: Donald Knuth
+  fullname:
+    first: Donald
+    middle: Ervin
+    last: Knuth
   gender: male
   born: 1937-01-10
   age: 72
@@ -81,7 +89,11 @@
   country: Netherlands
   city: Rotterdam
   occupation: computer scientist
-- name: Alan Mathison Turing
+- name: Alan Turing
+  fullname:
+    first: Alan
+    middle: Mathison
+    last: Turing
   gender: male
   born: 1912-06-23
   age: 97
@@ -99,7 +111,11 @@
   country: Switzerland
   city: Winterthur
   occupation: computer scientist
-- name: Stephen Gary Wozniak
+- name: Stephen Wozniak
+  fullname:
+    first: Stephen
+    middle: Gary
+    last: Wozniak
   nick: Woz
   gender: male
   born: 1950-08-11

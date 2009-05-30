@@ -18,12 +18,13 @@
 
 __doc__ = """
 >>> import yaml
->>> people = yaml.load(open('example_data/people.yaml'))
+>>> from db import Dataset
+>>> people = Dataset(yaml.load(open('example_data/people.yaml'))).all()
 
 # All aggregates
 
 >>> int(Count().count_for(people))
-7
+14
 >>> int(Avg('age').count_for(people))
 86
 >>> int(Min('age').count_for(people))

@@ -18,7 +18,7 @@ __doc__ = """
 >>> import yaml
 >>> data = yaml.load(open('example_data/people.yaml'))
 >>> people = Dataset(data)
->>> people.inspect() == {'website': 2, 'city': 14, 'name': 14, 'nick': 4, 'country': 14, 'age': 13, 'born': 13, 'gender': 14, 'occupation': 12}
+>>> people.inspect() == {'website': 2, 'city': 14, 'name': 14, 'nick': 4, 'country': 14, 'age': 13, 'born': 13, 'gender': 14, 'occupation': 12, 'fullname': 4}
 True
 >>> len(people.all())   # results are found
 14
@@ -41,7 +41,7 @@ True
 >>> repr(people.find(country='England'))
 '[<Document 8>, <Document 11>]'
 >>> [p.name for p in people.find(country='England')]
-['Thomas Fowler', 'Alan Mathison Turing']
+['Thomas Fowler', 'Alan Turing']
 >>> len(people.find(country=exact('England')))      # same as above but faster
 2
 >>> len(people.find(country=not_('USA')))
@@ -187,7 +187,25 @@ Average male from Milwaukee, USA is 72.0 years old
 Average male from New York, USA is 56.0 years old
 Average female from None, USA is 88.0 years old
 Average male from San Jose, USA is 59.0 years old
+
+# nested lookups
+
+>>> people.values_for('fullname__first')
+['Alan', 'Donald', 'Linus', 'Stephen']
+>>> [p.name for p in people.find(fullname__last='Torvalds')]
+['Linus Torvalds']
 """
+
+# NESTING_DELIMITER is a delimiter for indexing and subsequent lookups, e.g.:
+# "foo__bar" matches {'foo':{'bar':123}}.
+# The delimiter can be set to "__" or whatever in order to allow lookups
+# by keys containing a dot.
+# Note that this will be used as query.find(foo__bar=123), so a little subset
+# of symbols is allowed here.
+#
+# XXX this should be automatically controlled: if current delimiter is found
+#     within keys, another must be auto-chosen and data reindexed.
+NESTING_DELIMITER = '__'
 
 # EXCEPTIONS
 
@@ -371,7 +389,7 @@ class Query(CachedIterator):
         values = []
         for d in docs:
             if key in d:
-                values.extend(self._dataset._unwrap_value(d[key]))
+                values.extend(v for k,v in self._dataset._unwrap_value(key, d[key]))
         # make them distinct
         return sorted(set(values)) # returns list, not set
 
@@ -580,17 +598,19 @@ class Dataset(object):
     #  Service methods  |
     #-------------------+
 
-    def _unwrap_value(self, value):
+    def _unwrap_value(self, key, value):
         "Wraps scalar in list; if value already was a list, it's returned intact."
         # (one level only. if there are more, will raise TypeError: unhashable type)
         if isinstance(value, list):
-            return value
+            return [(key,v) for v in value]
         elif isinstance(value, dict):
-            raise TypeError, 'This program cannot correctly process nested dictionaries within documents, like this one: %s' % unicode(value)
+            results = []
+            for k,v in value.items():
+                nested_key = NESTING_DELIMITER.join([key,k])
+                results.append((nested_key, v))
+            return results
         else:
-            return [value]
-        #except TypeError:
-        #    raise TypeError, 'could not index %s=%s' % (key, val)
+            return [(key, value)]
 
     def _build_index(self):
         "Creates index for data. Representation: key -> value -> list_of_IDs."
@@ -602,8 +622,9 @@ class Dataset(object):
             for key in item:
                 val = item[key]
                 if val != None:
-                    for v in self._unwrap_value(val):
-                        self._index.setdefault(key, {}).setdefault(v, []).append(i)
+                    for k, v in self._unwrap_value(key, val):
+                        if __debug__: print 'indexing "%s"->"%s"' % (k, v)
+                        self._index.setdefault(k, {}).setdefault(v, []).append(i)
 
         # reset other indices built ad hoc
         self._index_values_by_key = {}
