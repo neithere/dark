@@ -637,6 +637,20 @@ class Dataset(object):
         ...                  ('foo__bar__quux', 456),
         ...                  ('foo__bar__quack', 789)])
         True
+        >>> x = d._unwrap_value('foo', datetime.date(2009, 6, 2))
+        >>> dict(x) == dict([('foo', datetime.date(2009, 6, 2)),
+        ...                  ('foo__year', 2009),
+        ...                  ('foo__month', 6),
+        ...                  ('foo__day', 2)])
+        True
+        >>> x = d._unwrap_value('foo', datetime.datetime(2009, 6, 2, 16, 42))
+        >>> dict(x) == dict([('foo', datetime.datetime(2009, 6, 2, 16, 42)),
+        ...                  ('foo__year', 2009),
+        ...                  ('foo__month', 6),
+        ...                  ('foo__day', 2),
+        ...                  ('foo__hour', 16),
+        ...                  ('foo__minute', 42)])
+        True
         """
         if isinstance(value, (list,tuple)):
             # got multiple values for key,
@@ -653,6 +667,21 @@ class Dataset(object):
                 nested_key = self.nest(key,k)
                 results.extend(self._unwrap_value(nested_key, v))
             return results
+        elif isinstance(value, (datetime.date, datetime.datetime)):
+            # got date,
+            # return it as is and also decompose up to day or minute
+            result = [
+                (key, value),
+                (self.nest(key,'year'),  value.year),
+                (self.nest(key,'month'), value.month),
+                (self.nest(key,'day'),   value.day),
+            ]
+            if isinstance(value, datetime.datetime):
+                result.extend([
+                    (self.nest(key,'hour'),   value.hour),
+                    (self.nest(key,'minute'), value.minute),
+                ])
+            return result
         else:
             # got single value,
             # return key/value pair (wrapped in list)
