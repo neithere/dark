@@ -9,6 +9,9 @@
 #  Software Foundation. See the file README for copying conditions.
 #
 
+import datetime
+from warnings import warn
+
 from iterating import CachedIterator
 from aggregates import *
 
@@ -600,18 +603,62 @@ class Dataset(object):
     #  Service methods  |
     #-------------------+
 
+    def nest(self, parent_key, key):
+        return NESTING_DELIMITER.join([parent_key, key])
+
     def _unwrap_value(self, key, value):
-        "Wraps scalar in list; if value already was a list, it's returned intact."
-        # (one level only. if there are more, will raise TypeError: unhashable type)
-        if isinstance(value, list):
-            return [(key,v) for v in value]
+        """
+        Unwraps nested data structures. Returns a series of key/value pairs.
+
+        >>> d = Dataset([])
+        >>> x = d._unwrap_value('foo', 'bar')
+        >>> dict(x) == dict([('foo', 'bar')])
+        True
+        >>> x = d._unwrap_value('foo', ['bar','quux'])
+        >>> dict(x) == dict([('foo', 'bar'),
+        ...                  ('foo', 'quux')])
+        True
+        >>> x = d._unwrap_value('foo', {'bar': 'quux'})
+        >>> dict(x) == dict([('foo__bar', 'quux')])
+        True
+        >>> x = d._unwrap_value('foo', {'bar': [123, 456]})
+        >>> dict(x) == dict([('foo__bar', 123),
+        ...                  ('foo__bar', 456)])
+        True
+        >>> x = d._unwrap_value('foo', {'bar': {'quux': 123}})
+        >>> dict(x) == dict([('foo__bar__quux', 123)])
+        True
+        >>> x = d._unwrap_value('foo', {'bar': {'quux': [123, 456]}})
+        >>> dict(x) == dict([('foo__bar__quux', 123),
+        ...                  ('foo__bar__quux', 456)])
+        True
+        >>> x = d._unwrap_value('foo', {'bar': [{'quux': [123, 456], 'quack': 789}]})
+        >>> dict(x) == dict([('foo__bar__quux', 123),
+        ...                  ('foo__bar__quux', 456),
+        ...                  ('foo__bar__quack', 789)])
+        True
+        """
+        if isinstance(value, (list,tuple)):
+            # got multiple values for key,
+            # return multiple key/value pairs
+            result = []
+            for v in value:
+                result.extend(self._unwrap_value(key,v))
+            return result
         elif isinstance(value, dict):
+            # got nested key/value pairs for key,
+            # return flattened representation
             results = []
             for k,v in value.items():
-                nested_key = NESTING_DELIMITER.join([key,k])
-                results.append((nested_key, v))
+                nested_key = self.nest(key,k)
+                results.extend(self._unwrap_value(nested_key, v))
             return results
         else:
+            # got single value,
+            # return key/value pair (wrapped in list)
+            if not isinstance(value, (basestring, int, float, bool, type(None))):
+                warn(u'Expected string, number, boolean or None, got %s while '\
+                     'indexing data.' % value, UserWarning)
             return [(key, value)]
 
     def _build_index(self):
