@@ -24,26 +24,26 @@ __doc__ = """
 # All aggregates
 
 >>> int(Count().count_for(people))
-14
+18
 >>> int(Avg('age').count_for(people))
-86
+79
 >>> int(Min('age').count_for(people))
 40
 >>> int(Max('age').count_for(people))
 232
 >>> int(Sum('age').count_for(people))
-1128
+1272
 >>> int(Qu1('age').count_for(people))
-56
+99
 >>> int(Qu3('age').count_for(people))
-77
+45
 
 # N/A policy
 
 >>> str(Sum('age').count_for(people))
-'1128'
+'1272'
 >>> str(Sum('age', NA.skip).count_for(people))
-'1128'
+'1272'
 >>> str(Sum('age', NA.reject).count_for(people))
 'None'
 >>> str(Min('age').count_for(people))

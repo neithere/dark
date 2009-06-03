@@ -21,176 +21,197 @@ __doc__ = """
 >>> import yaml
 >>> data = yaml.load(open('example_data/people.yaml'))
 >>> people = Dataset(data)
->>> people.inspect() == {'website': 2, 'location': 14, 'city': 14, 'name': 14, 'nick': 4, 'country': 14, 'age': 13, 'born': 13, 'gender': 14, 'occupation': 12, 'fullname': 4}
+>>> people.inspect() == {'website': 3, 'born': 18, 'name': 18, 'nick': 4,
+...                      'age': 16, 'gender': 16, 'occupation': 16,
+...                      'fullname': 8, 'residence': 1}
 True
 >>> len(people.all())   # results are found
-14
+18
 >>> len(people.all())   # iterator is not exhausted
-14
+18
 >>> people.find()[3]
 <Document 3>
->>> len(people.find(country=any_))
-14
+>>> len(people.find(born__country=any_))
+18
 >>> len(people.find(occupation=any_))
-12
+16
 >>> len(people.find(age=not_(None)))
-13
+16
 >>> len(people.all().exclude(age=None))     # same as previous, different syntax
-13
+16
 >>> people.all().exclude(age=None).count()  # same as previous, yet another syntax
-13
->>> people.find(country='England')
-[<Document 8>, <Document 11>]
->>> repr(people.find(country='England'))
-'[<Document 8>, <Document 11>]'
->>> [p.name for p in people.find(country='England')]
+16
+>>> people.find(born__country='England')
+[<Document 0>, <Document 2>]
+>>> repr(people.find(born__country='England'))
+'[<Document 0>, <Document 2>]'
+>>> [p.name for p in people.find(born__country='England')]
 ['Thomas Fowler', 'Alan Turing']
->>> len(people.find(country=exact('England')))      # same as above but faster
+>>> len(people.find(born__country=exact('England')))      # same as above but faster
 2
->>> len(people.find(country=not_('USA')))
-8
->>> [p.name for p in people.find(country='USA', gender=not_('male'))]    # multiple conditions
-['Kathleen Antonelli', 'Jean Bartik']
->>> [p.name for p in people.find(country='USA').exclude(gender='male')]  # same but cleaner
-['Kathleen Antonelli', 'Jean Bartik']
->>> item = people.all()[0]
+>>> len(people.find(born__country=not_('USA')))
+11
+>>> len(people.find(born__country='USA')) + len(people.find(born__country='England'))
+9
+>>> len(people.all().exclude(born__country=in_(['USA','England'])))
+9
+>>> [p.name for p in people.find(born__country='USA', gender=not_('male'))]    # multiple conditions
+['Anita Borg', 'Kathleen Antonelli', 'Jean Bartik']
+>>> [p.name for p in people.find(born__country='USA').exclude(gender='male')]  # same but cleaner
+['Anita Borg', 'Kathleen Antonelli', 'Jean Bartik']
+>>> item = people.all()[11]
 >>> item
-<Document 0>
+<Document 11>
 >>> item._dict == None   # empty dict
 True
 >>> item.name
-'Richard M. Stallman'
->>> item._dict == {'name': 'Richard M. Stallman',
+'Richard Stallman'
+>>> item._dict == {'name': 'Richard Stallman',
+...                'fullname': {'first':  'Richard',
+...                             'middle': 'Matthew',
+...                             'last':   'Stallman'},
 ...                'nick': 'rms',
-...                'born': datetime.date(1953, 3, 16),
 ...                'age': 56,
 ...                'gender': 'male',
-...                'country': 'USA',
-...                'city': 'New York',
-...                'location': {'country': 'USA', 'city': 'New York'},
+...                'born': {'date':    datetime.date(1953, 3, 16),
+...                         'country': 'USA',
+...                         'city':    'New York'},
 ...                'occupation': 'President of the FSF',
 ...                'website': 'http://stallman.org'}
 True
->>> people.values_for('country')
-['England', 'Finland', 'Netherlands', 'New Zealand', 'Norway', 'Sweden', 'Switzerland', 'USA']
+>>> people.values_for('born__country')
+['England', 'Finland', 'Netherlands', 'New Zealand', 'Norway', 'South Africa', 'Sweden', 'Switzerland', 'USA']
 
 # group by country
->>> for country in people.values_for('country'):
+>>> for country in people.values_for('born__country'):
 ...     print country
 England
 Finland
 Netherlands
 New Zealand
 Norway
+South Africa
 Sweden
 Switzerland
 USA
 
 # group by country; calculate average age
->>> for country in people.values_for('country'):
-...     documents = people.find(country=country)
+>>> for country in people.values_for('born__country'):
+...     documents = people.find(born__country=country)
 ...     print country, str(Avg('age').count_for(documents))
 England 164.5
 Finland 40.0
-Netherlands 79.0
+Netherlands 64.0
 New Zealand N/A
 Norway 83.0
+South Africa 41.0
 Sweden 102.0
 Switzerland 75.0
-USA 70.0
+USA 67.7142857143
 
 # group by country; count country population
->>> for country in sorted(people.values_for('country')):
-...     documents = people.find(country=country)
+>>> for country in sorted(people.values_for('born__country')):
+...     documents = people.find(born__country=country)
 ...     print country, int(Count().count_for(documents))
 England 2
 Finland 1
-Netherlands 1
-New Zealand 1
+Netherlands 2
+New Zealand 2
 Norway 1
+South Africa 1
 Sweden 1
 Switzerland 1
-USA 6
+USA 7
 
 # group by country and city
->>> for country in people.values_for('country'):
-...     for city in people.find(country=country).values_for('city'):
+>>> for country in people.values_for('born__country'):
+...     for city in people.find(born__country=country).values_for('born__city'):
 ...         print country, '-', city
 England - Great Torrington
 England - Maida Vale, London
 Finland - Helsinki
+Netherlands - Amsterdam
 Netherlands - Rotterdam
 New Zealand - Auckland
 Norway - Oslo
+South Africa - Pretoria
 Sweden - Stockholm
 Switzerland - Winterthur
+USA - None
 USA - Betty Jean Jennings
 USA - Chicago
 USA - Milwaukee
 USA - New York
-USA - None
 USA - San Jose
+USA - Seattle
 
 # group by country and city; count city population
->>> for country in people.values_for('country'):
-...     for city in people.find(country=country).values_for('city'):
-...         documents = people.find(country=country, city=city)
+>>> for country in people.values_for('born__country'):
+...     for city in people.find(born__country=country).values_for('born__city'):
+...         documents = people.find(born__country=country, born__city=city)
 ...         print '%s, %s (%d)' % (country, city, Count().count_for(documents))
 England, Great Torrington (1)
 England, Maida Vale, London (1)
 Finland, Helsinki (1)
+Netherlands, Amsterdam (1)
 Netherlands, Rotterdam (1)
-New Zealand, Auckland (1)
+New Zealand, Auckland (2)
 Norway, Oslo (1)
+South Africa, Pretoria (1)
 Sweden, Stockholm (1)
 Switzerland, Winterthur (1)
+USA, None (1)
 USA, Betty Jean Jennings (1)
 USA, Chicago (1)
 USA, Milwaukee (1)
 USA, New York (1)
-USA, None (1)
 USA, San Jose (1)
+USA, Seattle (1)
 
 # group by country, city and gender
->>> for country in people.values_for('country'):
-...     for city in people.find(country=country).values_for('city'):
-...         for gender in people.find(country=country, city=city).values_for('gender'):
+>>> for country in people.values_for('born__country'):
+...     for city in people.find(born__country=country).values_for('born__city'):
+...         for gender in people.find(born__country=country, born__city=city).values_for('gender'):
 ...             print '%s, %s, %s' % (country, city, gender)
 England, Great Torrington, male
 England, Maida Vale, London, male
 Finland, Helsinki, male
+Netherlands, Amsterdam, male
 Netherlands, Rotterdam, male
 New Zealand, Auckland, male
 Norway, Oslo, male
 Sweden, Stockholm, male
 Switzerland, Winterthur, male
+USA, None, female
 USA, Betty Jean Jennings, female
-USA, Chicago, male
+USA, Chicago, female
 USA, Milwaukee, male
 USA, New York, male
-USA, None, female
 USA, San Jose, male
+USA, Seattle, male
 
 # group by country, city, and gender; calculate average age
->>> for country in people.values_for('country'):
-...     for city in people.find(country=country).values_for('city'):
-...         for gender in people.find(country=country, city=city).values_for('gender'):
-...             documents = people.find(country=country, city=city, gender=gender)
+>>> for country in people.values_for('born__country'):
+...     for city in people.find(born__country=country).values_for('born__city'):
+...         for gender in people.find(born__country=country, born__city=city).values_for('gender'):
+...             documents = people.find(born__country=country, born__city=city, gender=gender)
 ...             print 'Average %s from %s, %s is %s years old' % (gender, city, country, str(Avg('age').count_for(documents)))
 Average male from Great Torrington, England is 232.0 years old
 Average male from Maida Vale, London, England is 97.0 years old
 Average male from Helsinki, Finland is 40.0 years old
+Average male from Amsterdam, Netherlands is 49.0 years old
 Average male from Rotterdam, Netherlands is 79.0 years old
 Average male from Auckland, New Zealand is N/A years old
 Average male from Oslo, Norway is 83.0 years old
 Average male from Stockholm, Sweden is 102.0 years old
 Average male from Winterthur, Switzerland is 75.0 years old
+Average female from None, USA is 88.0 years old
 Average female from Betty Jean Jennings, USA is 85.0 years old
-Average male from Chicago, USA is 60.0 years old
+Average female from Chicago, USA is 60.0 years old
 Average male from Milwaukee, USA is 72.0 years old
 Average male from New York, USA is 56.0 years old
-Average female from None, USA is 88.0 years old
 Average male from San Jose, USA is 59.0 years old
+Average male from Seattle, USA is 54.0 years old
 
 #----------------+
 # Nested structs |
@@ -199,7 +220,7 @@ Average male from San Jose, USA is 59.0 years old
 # values for nested key
 
 >>> people.values_for('fullname__first')
-['Alan', 'Donald', 'Linus', 'Stephen']
+['Alan', 'Anita', 'Donald', 'Guido', 'Linus', 'Richard', 'Stephen', 'Theo']
 
 # nested lookup
 
@@ -209,17 +230,17 @@ Average male from San Jose, USA is 59.0 years old
 # simple lookup, then values for nested key
 
 >>> people.find(gender='male').values_for('fullname__first')
-['Alan', 'Donald', 'Linus', 'Stephen']
+['Alan', 'Donald', 'Guido', 'Linus', 'Richard', 'Stephen']
 
 # nested lookup, then values for nested key
 
->>> people.find(location__country='USA').values_for('fullname__first')
-['Donald', 'Stephen']
+>>> people.find(born__country='USA').values_for('fullname__first')
+['Anita', 'Donald', 'Richard', 'Stephen']
 
 # nested lookup, then values for simple key
 
->>> [p.name for p in people.find(location__country='USA').exclude(gender='male')]
-['Kathleen Antonelli', 'Jean Bartik']
+>>> [p.name for p in people.find(born__country='USA').exclude(gender='male')]
+['Anita Borg', 'Kathleen Antonelli', 'Jean Bartik']
 """
 
 __all__ = ['Dataset', 'Query',   'not_', 'any_', 'in_', 'exact', 'gt']
