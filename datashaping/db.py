@@ -21,7 +21,7 @@ __doc__ = """
 >>> import yaml
 >>> data = yaml.load(open('example_data/people.yaml'))
 >>> people = Dataset(data)
->>> people.inspect() == {'website': 2, 'city': 14, 'name': 14, 'nick': 4, 'country': 14, 'age': 13, 'born': 13, 'gender': 14, 'occupation': 12, 'fullname': 4}
+>>> people.inspect() == {'website': 2, 'location': 14, 'city': 14, 'name': 14, 'nick': 4, 'country': 14, 'age': 13, 'born': 13, 'gender': 14, 'occupation': 12, 'fullname': 4}
 True
 >>> len(people.all())   # results are found
 14
@@ -67,6 +67,7 @@ True
 ...                'gender': 'male',
 ...                'country': 'USA',
 ...                'city': 'New York',
+...                'location': {'country': 'USA', 'city': 'New York'},
 ...                'occupation': 'President of the FSF',
 ...                'website': 'http://stallman.org'}
 True
@@ -191,12 +192,34 @@ Average male from New York, USA is 56.0 years old
 Average female from None, USA is 88.0 years old
 Average male from San Jose, USA is 59.0 years old
 
-# nested lookups
+#----------------+
+# Nested structs |
+#----------------+
+
+# values for nested key
 
 >>> people.values_for('fullname__first')
 ['Alan', 'Donald', 'Linus', 'Stephen']
+
+# nested lookup
+
 >>> [p.name for p in people.find(fullname__last='Torvalds')]
 ['Linus Torvalds']
+
+# simple lookup, then values for nested key
+
+>>> people.find(gender='male').values_for('fullname__first')
+['Alan', 'Donald', 'Linus', 'Stephen']
+
+# nested lookup, then values for nested key
+
+>>> people.find(location__country='USA').values_for('fullname__first')
+['Donald', 'Stephen']
+
+# nested lookup, then values for simple key
+
+>>> [p.name for p in people.find(location__country='USA').exclude(gender='male')]
+['Kathleen Antonelli', 'Jean Bartik']
 """
 
 __all__ = ['Dataset', 'Query',   'not_', 'any_', 'in_', 'exact', 'gt']
@@ -386,17 +409,17 @@ class Query(CachedIterator):
         by iteration over query itself because the results are retrieved only once
         and then reused.
         """
+        # get all existing values for given key
+        all_values = self._dataset.values_for(key)
+
+        # no filters specified -> do a lightweight dictionary lookup
         if not self._lookups:
-            return self._dataset.values_for(key)
-        # get docs for current lookups
-        docs = self._dataset.get_docs(self._execute())
-        # gather values
-        values = []
-        for d in docs:
-            if key in d:
-                values.extend(v for k,v in self._dataset._unwrap_value(key, d[key]))
-        # make them distinct
-        return sorted(set(values)) # returns list, not set
+            return all_values
+
+        # filters are specified -> execute the query and find intersections
+        ids = set(self._execute())
+        return sorted(value for value in all_values
+                      if ids.intersection(self._dataset.ids_by(key,value)))
 
     #---------------------+
     #   Private methods   |

@@ -6,6 +6,9 @@
   age: 56
   country: USA
   city: New York
+  location:
+      country: USA
+      city: New York
   occupation: President of the FSF
   website: http://stallman.org
 - name: Linus Torvalds
@@ -18,6 +21,9 @@
   age: 40
   country: Finland
   city: Helsinki
+  location:
+    country: Finland
+    city: Helsinki
   occupation: Software engineer
   website: http://torvalds-family.blogspot.com/
 - name: Kathleen Antonelli
@@ -27,6 +33,9 @@
   age: 88
   country: USA
   city: None
+  location:
+    country: USA
+    city: None
   occupation: original ENIAC programmer
 - name: Kristen Nygaard
   nick: null
@@ -35,6 +44,9 @@
   age: 83
   country: Norway
   city: Oslo
+  location:
+    country: Norway
+    city: Oslo
   occupation:
       - mathematician
       - polititian
@@ -46,17 +58,26 @@
   age: 102
   country: Sweden
   city: Stockholm
+  location:
+    country: Sweden
+    city: Stockholm
 - name: Jean Bartik
   gender: female
   born: 1924-12-27
   age: 85
   country: USA
   city: Betty Jean Jennings
+  location:
+    country: USA
+    city: Betty Jean Jennings
   occupation: programmer
 - name: Ross Ihaka
   gender: male
   country: New Zealand
-  city: Auckland 
+  city: Auckland
+  location:
+    country: New Zealand
+    city: Auckland
   occupation: R language author
 - name: Anita Borg
   gender: male
@@ -64,12 +85,18 @@
   age: 60
   country: USA
   city: Chicago
+  location:
+    country: USA
+    city: Chicago
 - name: Thomas Fowler
   gender: male
   born: 1777
   age: 232
   country: England
   city: Great Torrington
+  location:
+    country: England
+    city: Great Torrington
   occupation: invented mechanical calculator
 - name: Donald Knuth
   fullname:
@@ -81,6 +108,9 @@
   age: 72
   country: USA
   city: Milwaukee
+  location:
+    country: USA
+    city: Milwaukee
   occupation: computer scientist
 - name: Edsger Wybe Dijkstra
   gender: male
@@ -88,6 +118,9 @@
   age: 79
   country: Netherlands
   city: Rotterdam
+  location:
+    country: Netherlands
+    city: Rotterdam
   occupation: computer scientist
 - name: Alan Turing
   fullname:
@@ -99,6 +132,9 @@
   age: 97
   country: England
   city: Maida Vale, London
+  location:
+    country: England
+    city: Maida Vale, London
   occupation:
       - mathematician
       - logician
@@ -110,6 +146,9 @@
   age: 75
   country: Switzerland
   city: Winterthur
+  location:
+    country: Switzerland
+    city: Winterthur
   occupation: computer scientist
 - name: Stephen Wozniak
   fullname:
@@ -122,4 +161,7 @@
   age: 59
   country: USA
   city: San Jose
+  location:
+    country: USA
+    city: San Jose
   occupation: computer engineer
