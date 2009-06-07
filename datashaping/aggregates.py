@@ -16,44 +16,6 @@
 #     int(calc)                  # here the calculation is actually done
 #     int(calc)                  # cached result returned, no recalc
 
-__doc__ = """
->>> import yaml
->>> from db import Dataset
->>> people = Dataset(yaml.load(open('example_data/people.yaml'))).all()
-
-# All aggregates
-
->>> int(Count().count_for(people))
-18
->>> int(Avg('age').count_for(people))
-79
->>> int(Min('age').count_for(people))
-40
->>> int(Max('age').count_for(people))
-232
->>> int(Sum('age').count_for(people))
-1272
->>> int(Qu1('age').count_for(people))
-99
->>> int(Qu3('age').count_for(people))
-45
-
-# N/A policy
-
->>> str(Sum('age').count_for(people))
-'1272'
->>> str(Sum('age', NA.skip).count_for(people))
-'1272'
->>> str(Sum('age', NA.reject).count_for(people))
-'None'
->>> str(Min('age').count_for(people))
-'40'
->>> str(Min('age', NA.skip).count_for(people))
-'40'
->>> str(Min('age', NA.reject).count_for(people))
-'None'
-"""
-
 __all__ = ['Aggregate', 'Avg', 'Count', 'Max', 'Median', 'Min', 'Sum', 'Qu1', 'Qu3', 'NA']
 
 class AggregationError(Exception):
@@ -196,6 +158,6 @@ class Count(AggregateManager):
     def calc(values):
         return len(set(values))
 
-if __name__=='__main__':
+if __name__ == '__main__':
     import doctest
     doctest.testmod()

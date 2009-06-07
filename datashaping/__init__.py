@@ -9,7 +9,7 @@
 #  Software Foundation. See the file README for copying conditions.
 #
 
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 
 from .aggregates import *
 from .db import *
