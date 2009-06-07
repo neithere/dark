@@ -4,7 +4,7 @@
   gender: male
   age: 232
   born:
-    date:    1777
+    date:    1777-01-01
     country: England
     city:    Great Torrington
   occupation: invented mechanical calculator
@@ -13,7 +13,7 @@
   gender: male
   age: 102
   born:
-    date:    1907
+    date:    1907-01-01
     country: Sweden
     city:    Stockholm
 - name: Alan Turing

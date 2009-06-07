@@ -17,12 +17,11 @@ from aggregates import *
 #       people.group_by('country','city').pivot_by('gender').annotate(Avg('age'))
 
 # TODO: [0, None, NA] -- they all mean the same. Need precise tests which should be used when.
-#       Also in some cases there are no columns at all -- this is simply unacceptable.
 
 # TODO: see cast() code for more TODOs :)
 
 __doc__ = """
->>> from db import Dataset, in_, not_
+>>> from db import Dataset
 >>> from aggregates import *
 >>> import yaml
 >>> data = yaml.load(open('example_data/people.yaml'))
@@ -275,7 +274,7 @@ __doc__ = """
 
 # pivoting by multiple factors, multiple levels
 
->>> cast_cons(q.find(born__country=in_(['Netherlands','Finland'])), ['born__country'], ['born__city', 'gender'])
+>>> cast_cons(q.find(born__country__in=['Netherlands','Finland']), ['born__country'], ['born__city', 'gender'])
  +---------------+-----------+----------+-----------+------+------------+
  | born__country | Amsterdam | Helsinki | Rotterdam | male | Count(all) |
  +---------------+-----------+----------+-----------+------+------------+
@@ -410,7 +409,8 @@ class Level(object):
         self.children = []
     def attach(self, levels):
         "Attaches a depending factor level to this level."
-        for l in levels: assert(isinstance(l, Level))          # DEBUG
+        if __debug__:
+            for l in levels: assert(isinstance(l, Level))
         self.children.extend(levels)
     def get_rows(self):
         "Returns table rows. If more than one child exists, duplicate self for each of them."
@@ -433,28 +433,40 @@ class CatchAllLevel(object):
         self.query = query
     __unicode__ = __str__ = lambda self: '(all)'
 
-"""
-    group_by -- по каким ключам сгруппировать данные (ключ идет в заголовок столбца, значение -- в ячейку)
-    pivot_by -- по каким значениям дополнительно сгруппировать данные (это уже НЕ pipeline; значение идет в заголовок столбца)
-    agg(key) -- по какому ключу получать значение и какой функцией его обрабатывать (результат идет в ячейку pivot)
-
-    если сводные значения не указаны, делаем просто общий агрегат.
-
-    смысл "отливки" (cast) в формировании _табличной_ формы; перед этим делается группировка -- можно её код убрать в Query.
-"""
-
 def cast(basic_query, factor_names=None, pivot_factors=None, *aggregates):
     """
     Returns a table summarizing data grouped by given factors.
     Calculates aggregated values. If aggregate is not defined, Count() is used.
     Supports pivoting (i.e. using factor levels as columns).
+
+    The name "cast" stands for "casting melt data" and is a reference to Hadley
+    Wickham's package "reshape" for R language (http://had.co.nz/reshape/),
+    though internally these packages have little in common.
+
+    `basic_query` is a Query instance (pre-filtered or not) on which the table
+    is going to be built.
+
+    `factor_names` is an optional list of keys by which data will be grouped.
+    Their names will go into the table heading, and their values will be used
+    to calculate aggregated values. If more than one factor is specified, they
+    will be grouped hierarchically from left to right.
+
+    `pivot_factors` is an optional list of keys which values will go into the
+    table heading along with factor names so that extra columns with
+    aggregated values will be added for each possible factor level (key value).
+
+    `aggregates` is an optional list of Aggregate instances. Some aggregates
+    require a factor name (i.e. key). Examples: Count(), Sum('price').
+    Aggregates will be calculated for each combination of factors and for each
+    pivoted factor level. If aggregates are not specified, a Count() is added.
+
+    See tests for usage examples.
     """
-    # XXX TODO: multiple aggregates (they will also multiply pivot columns)
     
     # XXX this function actually *groups* data and creates a table.
     #     Move the grouping stuff to Query code as a method?
 
-    # note: do not declare the lists in func sig or they will migrate between calls :)
+    # note: mutables declared in func signature tend to migrate between calls ;)
     factor_names  = factor_names  or []
     pivot_factors = pivot_factors or []
     aggregates    = aggregates    or [Count()]

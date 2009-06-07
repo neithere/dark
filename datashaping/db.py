@@ -31,34 +31,75 @@ True
 18
 >>> people.find()[3]
 <Document 3>
->>> len(people.find(born__country=any_))
-18
->>> len(people.find(occupation=any_))
-16
->>> len(people.find(age=not_(None)))
-16
->>> len(people.all().exclude(age=None))     # same as previous, different syntax
-16
->>> people.all().exclude(age=None).count()  # same as previous, yet another syntax
-16
+
+# "exists" lookup type
+
+>>> len(people.all().find(website__exists=True))
+3
+>>> len(people.all().exclude(website__exists=True))
+15
+>>> len(people.all().find(website__exists=False))
+15
+>>> len(people.all().exclude(website__exists=False))
+3
+>>> len(people.all().find(nick__exists=True))
+5
+>>> len(people.all().find(website__exists=True, nick__exists=True))
+1
+>>> len(people.all().find(website__exists=True, nick__exists=False))
+2
+>>> len(people.all().find(website__exists=False, nick__exists=True))
+4
+>>> len(people.all().find(website__exists=False, nick__exists=False))
+11
+>>> len(people.all().find(website__exists=True).find(nick__exists=True))
+1
+>>> len(people.all().find(website__exists=True).exclude(nick__exists=True))
+2
+>>> len(people.all().find(website__exists=True).exclude(nick__exists=True).find(born__country='Finland'))
+1
+
+
+# "filled" lookup type
+
+>>> len(people.all().find(nick__filled=True))
+4
+>>> len(people.all().find(nick__filled=False))
+14
+>>> len(people.all().find(nick__exists=True, nick__filled=False))
+1
+>>> len(people.all().exclude(nick__filled=True))
+14
+
+
+
+
+>>> len(people.find(born__city__not=None))
+17
+>>> len(people.all().exclude(born__city=None))     # same as previous, different syntax
+17
+>>> people.all().exclude(born__city=None).count()  # same as previous, yet another syntax
+17
 >>> people.find(born__country='England')
 [<Document 0>, <Document 2>]
 >>> repr(people.find(born__country='England'))
 '[<Document 0>, <Document 2>]'
 >>> [p.name for p in people.find(born__country='England')]
 ['Thomas Fowler', 'Alan Turing']
->>> len(people.find(born__country=exact('England')))      # same as above but faster
-2
->>> len(people.find(born__country=not_('USA')))
+>>> len(people.find(born__country__not='USA'))
 11
 >>> len(people.find(born__country='USA')) + len(people.find(born__country='England'))
 9
->>> len(people.all().exclude(born__country=in_(['USA','England'])))
+>>> len(people.all().exclude(born__country__in=['USA','England']))
 9
->>> [p.name for p in people.find(born__country='USA', gender=not_('male'))]    # multiple conditions
+>>> [p.name for p in people.find(born__country='USA', gender__not='male')]    # multiple conditions
 ['Anita Borg', 'Kathleen Antonelli', 'Jean Bartik']
 >>> [p.name for p in people.find(born__country='USA').exclude(gender='male')]  # same but cleaner
 ['Anita Borg', 'Kathleen Antonelli', 'Jean Bartik']
+>>> [(p.name,p.age) for p in people.find(age__lt=50)]
+[('Guido van Rossum', 49), ('Theo de Raadt', 41), ('Linus Torvalds', 40)]
+>>> [(p.name,p.age) for p in people.find(age__gt=100)]
+[('Thomas Fowler', 232), ('Conrad Palm', 102)]
 >>> item = people.all()[11]
 >>> item
 <Document 11>
@@ -241,11 +282,16 @@ Average male from Seattle, USA is 54.0 years old
 
 >>> [p.name for p in people.find(born__country='USA').exclude(gender='male')]
 ['Anita Borg', 'Kathleen Antonelli', 'Jean Bartik']
+
+#>>> results = people.all().group_by('born__country', 'born__city').order_by('age')
+#>>> results
+#{ ('USA', 'New York'): [<Document 1>, <Document 2>]
+#}
 """
 
-__all__ = ['Dataset', 'Query',   'not_', 'any_', 'in_', 'exact', 'gt']
+__all__ = ['Dataset', 'Query']
 
-# NESTING_DELIMITER is a delimiter for indexing and subsequent lookups, e.g.:
+# LOOKUP_DELIMITER is a delimiter for indexing and subsequent lookups, e.g.:
 # "foo__bar" matches {'foo':{'bar':123}}.
 # The delimiter can be set to "__" or whatever in order to allow lookups
 # by keys containing a dot.
@@ -254,49 +300,29 @@ __all__ = ['Dataset', 'Query',   'not_', 'any_', 'in_', 'exact', 'gt']
 #
 # XXX this should be automatically controlled: if current delimiter is found
 #     within keys, another must be auto-chosen and data reindexed.
-NESTING_DELIMITER = '__'
+LOOKUP_DELIMITER = '__'
+LOOKUP_TYPES = {
+    'exact':    lambda value, other:  value == other, # normally direct lookup instead
+    'not':      lambda value, other:  value != other,
+    'gt':       lambda value, other:  value <  other,
+    'lt':       lambda value, other:  other <  value,
+    'gte':      lambda value, other:  value <= other,
+    'lte':      lambda value, other:  other <= value,
+    'in':       lambda value, other:  other in value,  # TODO: date range
+    'contains': lambda value, other:  value in other,
+    'filled':   lambda value, other:  other is not None,  # defined and not None
+    'exists':   lambda value, other:  True,    # any value is OK if it's defined
+    # dates:
+    'year':     lambda value, other:  value == other.year,
+    'month':    lambda value, other:  value == other.month,
+    'day':      lambda value, other:  value == other.day,
+    'week_day': lambda value, other:  value == other.weekday(),
+}
 
 # EXCEPTIONS
 
 class ItemDoesNotMatch(Exception):
     pass
-
-# SPECIAL VALUES FOR LOOKUP
-
-class SpecialValue(object):
-    pass
-
-class SpecialContainerValue(SpecialValue):
-    def __init__(self, value):
-        self._value = value
-    __repr__ = lambda self: u'<%s %s>' % (self.__class__.__name__, self._value)
-
-class not_(SpecialContainerValue):
-    "Any value but this. Usage: not_(1) == 1 (False), not_(1) == 2 (True), not_(1) != 1 (True), not_(1) != 2 (False)"
-    __eq__ = lambda self,other: self._value != other
-    __ne__ = lambda self,other: not self.__eq__(other)
-
-any_ = not_(None)  # XXX actually "any" means *any*, including nulls :) this one must be renamed to "NotNull" or whatever
-
-class in_(SpecialContainerValue):
-    __eq__ = lambda self,other: self._value.__contains__(other)
-
-class exact(SpecialContainerValue):
-    "Does not add any special behaviour to contained value but allows faster lookups."
-    __eq__ = lambda self,other: self._value == other
-
-class gt(SpecialContainerValue):
-    "EXPERIMENTAL"\
-    " people.find(born=gt('1900-01-01')) --> all people born since 1st January 1900"
-    def __eq__(self, other):
-        # special case: date
-        if isinstance(other, (datetime.date, datetime.datetime)):
-            if not ininstance(self._value, (datetime.date, datetime.datetime)):
-                v = datetime.date(self._value)
-                return other < v
-        # all other cases
-        else:
-            return other < self._value
 
 # DOCUMENT
 
@@ -312,7 +338,7 @@ class Document(object):
     get    = lambda self, k,v: self._fetch().get(k,v)
     items  = lambda self: self._fetch().items()
     keys   = lambda self: self._fetch().keys()
-    values = lambda self: self._fetch().values_for()
+    values = lambda self: self._fetch().values()
     __contains__ = lambda self,key: key in self._fetch()
     __eq__       = lambda self,other: isinstance(other, Document) and other._idx == self._idx
     __getitem__  = lambda self,key: self._fetch()[key]
@@ -351,17 +377,16 @@ class Query(CachedIterator):
                 |                 |                       |
      __dataset__|__query__________|__query________________|__query____________________
 
-    TODO: multi-value lookups ("name=['john','mary']" -- compare list or items in list? maybe "name=in_(['john','mary')"?)
-    TODO: date lookups (year, month, day, time, range, cmp)
+    TODO: "or" queries, like q.find(Q(foo=123) | Q(bar=456))
     """
-    def _init(self, dataset, lookups={}, order_by={}, order_reversed=False, **kw):
+    def _init(self, dataset, lookups=None, order_by=None, order_reversed=False, **kw):
         assert isinstance(dataset, Dataset), 'Dataset class provides query methods required for Query to work'
         self._dataset = dataset
-        self._lookups = lookups  # XXX people.find(name='john').find(name='mary') -- ?
+        self._lookups = lookups or []  # XXX people.find( Q(name='john') | Q(name='mary') ) -- ?
         self._aggregates = []
         self._annotations = {}  # calculated aggregates in form {'items_count': 123}
         #self._group_by = group_by
-        self._order_by = order_by
+        self._order_by = order_by or {}
         self._order_reversed = order_reversed
         # cache flags
         self._executed = False
@@ -395,13 +420,12 @@ class Query(CachedIterator):
         return len(self)
 
     def exclude(self, **kw):
-        "Returns a new Query instance with existing minus given lookups. See find()."
-        inverted_lookups = dict((k,not_(v)) for k,v in kw.items())
-        return self.find(**inverted_lookups)
+        "Returns a new Query instance with existing minus given criteria. See find()."
+        return self._clone(extra_lookups=[(k, v, True) for k, v in kw.items()])
 
     def find(self, **kw):
         """
-        Returns a new Query instance with existing plus given lookups.
+        Returns a new Query instance with existing plus given criteria.
 
         No query is executed on calling this method. Despite database lookups
         are cheap when the data is stored in the memory, determining intersections
@@ -410,7 +434,7 @@ class Query(CachedIterator):
         of results or to iterate over results themselves. The find() method just
         constructs a new query by copying lightweight metadata.
         """
-        return self._clone(extra_lookups=kw)
+        return self._clone(extra_lookups=[(k, v, False) for k, v in kw.items()])
 
     def order_by(self, key):
         if key[0] == '-':   # a faster way to say .startswith('-')
@@ -453,12 +477,12 @@ class Query(CachedIterator):
         """
         return Document(self._dataset, item)#, aggregates=self._calculated_aggregates)
 
-    def _clone(self, extra_lookups={}, extra_aggregates=[], group_by=[], order_by=None, order_reversed=False):
+    def _clone(self, extra_lookups=None, extra_aggregates=None,
+               group_by=None, order_by=None, order_reversed=False):
         # XXX TODO: if this query was already executed, pass the results to the cloned
         #           and let is just apply new lookups, not do the work from scratch
-        lookups = self._lookups.copy()
-        lookups.update(**extra_lookups)
-        aggregates = self._aggregates + list(extra_aggregates)
+        lookups = self._lookups + (extra_lookups or [])  # XXX remove duplicates?
+        aggregates = self._aggregates + list(extra_aggregates or [])
         #group_by = group_by or self._group_by
         order_by = order_by or self._order_by
         return Query(dataset=self._dataset, lookups=lookups, aggregates=aggregates, #group_by=group_by,
@@ -475,7 +499,7 @@ class Query(CachedIterator):
             # on the fly using the self._prepare_item() method (called by our
             # superclass).
 
-            self._ids = list(self._dataset.find_ids(**self._lookups))
+            self._ids = list(self._dataset.find_ids(*self._lookups))
             self._executed = True
         return self._ids
 
@@ -583,18 +607,16 @@ class Dataset(object):
     Also remember to manually save Dataset.data to a file or DB after changing it.
     """
     def __init__(self, data):
-        if __debug__: print 'initializing dataset...'
         self.data = data
         self._build_index()
-        #self._rebuild_vectors()
 
     #---------------------+
-    #  Proxies for Query  |
-    #---------------------+
+    #  Proxies for Query  |     XXX remove these to respect loose coupling?
+    #---------------------+     dictlist backend can be extracted from the query API.
 
     def find(self, **kw):
         "Returns a Query instance with dataset items matching given criteria."
-        return Query(dataset=self, lookups=kw)
+        return Query(dataset=self).find(**kw)
 
     def all(self):
         "Returns a Query instance with all dataset items."
@@ -606,49 +628,206 @@ class Dataset(object):
 
     def get_doc(self, i):
         "Returns a dictionary by list index."
-        return self.data[i]
+        try:
+            return self.data[i]
+        except IndexError:
+            raise IndexError, 'tried to access item %d in a dataset which '\
+                              'contains only %d items.' % (i, len(self.data))
 
     def get_docs(self, ids):
         "Generates a list dictionaries by their indices in the main list (data)."
         return (self.data[i] for i in ids)
 
     def values_for(self, key):
-        "Returns a sorted list of distinct values existing for given key."
-        return self._index_values_by_key.setdefault(key,
-                       sorted( self._index.get(key, {}) ))
+        """
+        Returns a sorted list of distinct values existing for given key.
+        Caches results for given key. 
+        """
+        if not key in self._index_values_by_key:
+            self._index_values_by_key[key] = sorted( self._index.get(key, {}) )
+        return self._index_values_by_key[key]
 
     def ids_by(self, key, value):
         "Returns indices of items exactly matching given key and value."
         return self._index.get(key, {}).get(value, [])
 
-    def find_ids(self, **kw):
-        "Returns indices of items matching given criteria."
-        ids = None
-        if not kw:
+    def _resolve_lookup_key(self, key):
+        "Returns real lookup key and lookup type for given lookup key."
+        parts = key.split(LOOKUP_DELIMITER)
+        if len(parts) > 1 and parts[-1] in LOOKUP_TYPES:
+            lookup_type = parts.pop()
+            return LOOKUP_DELIMITER.join(parts), lookup_type
+        else:
+            return key, 'exact'
+
+    def _get_safe_comparison_value(self, value, other):
+        """
+        Expects two values. Returns the first one, converted to match the other's
+        type (if this is possible). If the value cannot be coerced to a matching
+        type, TypeError is raised.
+        """
+        safe_value = value
+
+        # dates
+        if isinstance(other, (datetime.date, datetime.datetime)):
+            # if other value is a date, try converting ours to date, too;
+            # if this is not possible, the comparison is simply wrong
+            # because the data types do not match.
+            
+            # coerce string to datetime
+            if isinstance(value, basestring):
+                try:
+                    safe_value = datetime.datetime.strptime(value, '%Y-%m-%d')
+                except ValueError, e:
+                    raise TypeError, 'Could not coerce string to date: %s' % e.message
+            # coerce datetime to date
+            if isinstance(other, datetime.date):
+                try:
+                    safe_value = safe_value.date()
+                except: pass
+        return safe_value
+
+    def find_ids(self, *criteria):
+        """
+        Returns indices of items matching given criteria.
+
+        A criterion is a triplet: `(lookup, value, negate)`.
+
+        The lookup part
+        ---------------
+
+        `lookup` is a string composed of the key by which to search, and the
+        desired lookup type. To match nested data structures compound keys can be
+        used. Key parts are separated from each other and from the lookup type
+        with lookup delimiter which is "__" (double underscore) by default.
+
+        If lookup type is not specified, "exact" is chosen by default.
+        Lookup type determines *how* the comparison will be performed.
+          
+        Examples
+        ~~~~~~~~
+          
+        * `foo`             = key `foo`, lookup type `exact`
+        * `foo__exact`      = key `foo`, lookup type `exact`
+        * `foo__bar`        = key `foo`, nested key `bar`, lookup type `exact`
+        * `foo__bar__exact` = key `foo`, nested key `bar`, lookup type `exact`
+        * `foo__in`         = key `foo`, lookup type `in`
+        * `foo__bar__in`    = key `foo`, nested key `bar`, lookup type `in`
+
+        If value is empty (e.g. `foo=None`), lookup type `exact` is replaced
+        by `filled`. This does not change the meaning but enables more compact
+        index table. Please note that lookup types `filled` and `exists` are
+        different.
+
+        Lookup types
+        ~~~~~~~~~~~~
+
+        * `exact` -- item has exactly the same value for given key. This lookup
+          does not involve item-by-item comparison and is thus very fast;
+        * `not` -- negated `exact`;
+        * `gt`
+        * `lt`
+        * `gte`
+        * `lte`
+        * `in` -- item value is a subset of `value`;
+        * `contains` -- `value` is a subset of item value;
+        * `filled` -- item has given key, value is not empty (not None);
+        * `exists` -- item has given key, value can be None.
+
+        Date-related lookup types:
+
+        * `year`
+        * `month`
+        * `day`
+        * `week_day`
+
+        The value part
+        --------------
+
+        A `value` makes sense in the context of given lookup type. In most cases
+        it serves an example of how certain piece of data should look like.
+        This is obviously not the case for boolean lookups such as `filled` and
+        `exists`.
+        If `value` is a string and in the compared data is of another type,
+        `value` is coerced to that type. If this is not possible, TypeError is
+        raised.
+
+        The negate part
+        ---------------
+
+        `negate` is a boolean. If set to True, the criterion's meaning is inverted.
+
+        A Query constructed like this:
+            query.find(first_name='john').exclude(last_name='connor')
+        can be represented as criteria triplets this way:
+            dataset.find_ids(
+                ('first_name', 'john', False),
+                ('last_name', 'connor', True),
+            )
+        """
+        if not criteria:
             return iter(xrange(0, len(self.data)))
+
         # intersecting subsets
-        for key, value in kw.items():
+        ids_include = None
+        ids_exclude = set()
+        for key, value, negate in criteria:
             found = []
-            if isinstance(value, exact):
-                # exact match allowed, cut off a corner, grab dict keys and leave
-                found.extend(self.ids_by(key, value._value))
+
+            # define lookup type and the real lookup key
+
+            key, lookup_type = self._resolve_lookup_key(key)
+
+            # we cannot index all possible keys because document-oriented database
+            # can contain too many combinations of keys in comparison to a RDBMS
+            # and the index can thus become a storage of empty values.
+            # This is why we coerce q.find(foo=None) to q.find(foo__filled=False).
+            if lookup_type is 'exact' and value is None:
+                lookup_type = 'filled'
+                value = False
+
+            # `not` is inverted `exact`
+            if lookup_type is 'not':
+                lookup_type = 'exact'
+                negate = not negate
+
+            # actually find ids
+
+            if lookup_type is 'exact':
+                # fast direct lookup
+                found.extend(self.ids_by(key, value))
             else:
-                # gotta compare our value to each other
+                if lookup_type in ('exists', 'filled'):
+                    # value influences negation, i.e.
+                    # "exclude exists=False" means "find exists=True" and so on:
+                    negate = negate == value
+                # compare our value to each other existing for this key
                 for other_value in self.values_for(key):
-                    # TODO: (==, <, >, >=, <=) for scalars and dates
-                    if value == other_value:
-                        # NOTE: get by the other value because ours can be a pseudo-value
+                    safe_value = self._get_safe_comparison_value(value, other_value)
+
+                    if LOOKUP_TYPES[lookup_type](safe_value, other_value):
                         found.extend(self.ids_by(key, other_value))
             if found:
-                ids = ids.intersection(found) if ids else set(found)
-        return [] if ids is None else iter(ids)
+                if negate:
+                    ids_exclude.update(found)
+                else:
+                    ids_include = ids_include.intersection(found) if ids_include else set(found)
+            else:
+                # if a condition has no matches, bail out
+                return iter([])
+
+        # if nothing was explicitly included, take all items
+        if ids_include is None:
+            ids_include = set(xrange(0, len(self.data)))
+
+        return iter(ids_include - ids_exclude)
 
     #-------------------+
     #  Service methods  |
     #-------------------+
 
     def nest(self, parent_key, key):
-        return NESTING_DELIMITER.join([parent_key, key])
+        return LOOKUP_DELIMITER.join([parent_key, key])
 
     def _unwrap_value(self, key, value):
         """
@@ -687,14 +866,15 @@ class Dataset(object):
         ...                  ('foo__month', 6),
         ...                  ('foo__day', 2)])
         True
-        >>> x = d._unwrap_value('foo', datetime.datetime(2009, 6, 2, 16, 42))
-        >>> dict(x) == dict([('foo', datetime.datetime(2009, 6, 2, 16, 42)),
-        ...                  ('foo__year', 2009),
-        ...                  ('foo__month', 6),
-        ...                  ('foo__day', 2),
-        ...                  ('foo__hour', 16),
-        ...                  ('foo__minute', 42)])
-        True
+        
+        # >>> x = d._unwrap_value('foo', datetime.datetime(2009, 6, 2, 16, 42))
+        # >>> dict(x) == dict([('foo', datetime.datetime(2009, 6, 2, 16, 42)),
+        # ...                  ('foo__year', 2009),
+        # ...                  ('foo__month', 6),
+        # ...                  ('foo__day', 2),
+        # ...                  ('foo__hour', 16),
+        # ...                  ('foo__minute', 42)])
+        # True
         """
         if isinstance(value, (list,tuple)):
             # got multiple values for key,
@@ -719,12 +899,15 @@ class Dataset(object):
                 (self.nest(key,'year'),  value.year),
                 (self.nest(key,'month'), value.month),
                 (self.nest(key,'day'),   value.day),
+                #(self.nest(key,'week_day'), value.weekday()),
             ]
-            if isinstance(value, datetime.datetime):
-                result.extend([
-                    (self.nest(key,'hour'),   value.hour),
-                    (self.nest(key,'minute'), value.minute),
-                ])
+            # XXX this is redundant in most cases; can be indexed on request or
+            #     if some options/metadata is provided; think about it later.
+            #if isinstance(value, datetime.datetime):
+            #    result.extend([
+            #        (self.nest(key,'hour'),   value.hour),
+            #        (self.nest(key,'minute'), value.minute),
+            #    ])
             return result
         else:
             # got single value,
@@ -743,10 +926,8 @@ class Dataset(object):
         for i, item in enumerate(self.data):
             for key in item:
                 val = item[key]
-                if val != None:
-                    for k, v in self._unwrap_value(key, val):
-                        if __debug__: print 'indexing "%s"->"%s"' % (k, v)
-                        self._index.setdefault(k, {}).setdefault(v, []).append(i)
+                for k, v in self._unwrap_value(key, val):
+                    self._index.setdefault(k, {}).setdefault(v, []).append(i)
 
         # reset other indices built ad hoc
         self._index_values_by_key = {}

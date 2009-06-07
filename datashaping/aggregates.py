@@ -93,6 +93,7 @@ class Aggregate(object):
     name = lambda self: self.__class__.__name__
 
 class AggregateManager(Aggregate):
+    "TODO factory?"
     def __init__(self, key, na_policy=NA.skip):
         self.key = key
         self.na_policy = na_policy
