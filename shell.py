@@ -12,7 +12,7 @@ Instantly accessible are:
 
 Example usage:
 
-    $ python shell.py some_data.json
+    $ ./shell.py -f some_data.json
     (...greeting skipped...)
     >>> len(q)
     6712
@@ -29,26 +29,53 @@ import os
 import sys
 import datashaping
 import code
-import readline
-import rlcompleter
 
-def _prepare_env(args):
+def _prepare_env(options):
     # read the file
-    filename = sys.argv[1] if len(sys.argv) > 1 else 'tests/people.yaml'
+    
+    filename = options.filename or 'tests/people.yaml'
     data     = _get_data(filename)
-    dataset  = datashaping.db.Dataset(data)
-    query    = datashaping.db.Query(dataset=dataset)
-    imported_objects = {'datashaping': datashaping,
-                        'ds': datashaping,  # shortcut
-                        'q': query}
+    storage  = datashaping.storage.dataset.Dataset(data)
+    query    = datashaping.query.Query(storage=storage)
+
     print
-    print "Available DataShape objects: `ds` (the module), `q` (the query)"
+    print "Welcome to DataShaping v.%s interactive console." % datashaping.__version__
+    print "Available objects: `ds` (datashaping module), `q` (query)."
     print
 
-    readline.set_completer(rlcompleter.Completer(imported_objects).complete)
-    readline.parse_and_bind("tab:complete")
+    namespace = {'datashaping': datashaping,
+                 'ds': datashaping,  # shortcut
+                 'q': query}
 
-    code.interact(local=imported_objects)
+    # The code below is based on django.core.management.commands.shell:
+    try:
+        if not options.use_plain:
+            raise ImportError
+        import IPython
+        shell = IPython.Shell.IPShell(user_ns=namespace)
+        shell.mainloop()
+    except ImportError:
+        try:
+            import readline
+        except ImportError:
+            pass
+        else:
+            import rlcompleter
+            readline.set_completer(rlcompleter.Completer(namespace).complete)
+            readline.parse_and_bind("tab:complete")
+        # We want to honor both $PYTHONSTARTUP and .pythonrc.py, so follow system
+        # conventions and get $PYTHONSTARTUP first then import user.
+        if not options.use_plain:
+            pythonrc = os.environ.get("PYTHONSTARTUP")
+            if pythonrc and os.path.isfile(pythonrc):
+                try:
+                    execfile(pythonrc)
+                except NameError:
+                    pass
+            # This will import .pythonrc.py as a side-effect
+            import user
+
+        code.interact(local=namespace)
 
 def _get_data(filename):
     "Returns Python data read from given file."
@@ -56,9 +83,11 @@ def _get_data(filename):
         raise ValueError, 'could not find file %s' % filename
     f = open(filename)
     loader = _get_loader(filename)
+    print 'Loading file %s...' % filename
     return loader(f)
 
 def _get_loader(filename):
+    # XXX add SQL loaders; this implies switching storage modules, too
     if filename.endswith('.yaml'):
         import yaml
         loader = yaml.load
@@ -70,4 +99,11 @@ def _get_loader(filename):
     return loader
 
 if __name__ == '__main__':
-    _prepare_env(sys.argv)
+    from optparse import OptionParser
+    parser = OptionParser(version='%%prog %s' % datashaping.__version__)
+    parser.add_option('-f', '--file', dest='filename', metavar='FILE',
+                      help='Load data from FILE.')
+    parser.add_option('-p', '--plain',  action='store_true', dest='use_plain',
+                      help='Tells Django to use plain Python, not IPython.')
+    (options, args) = parser.parse_args()
+    _prepare_env(options)
