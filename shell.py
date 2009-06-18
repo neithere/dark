@@ -35,7 +35,7 @@ def _prepare_env(options):
     
     filename = options.filename or 'tests/people.yaml'
     data     = _get_data(filename)
-    storage  = datashaping.storage.dataset.Dataset(data)
+    storage  = datashaping.storage.memory.MemoryCollection(data)
     query    = datashaping.query.Query(storage=storage)
 
     print
@@ -86,6 +86,18 @@ def _get_data(filename):
     print 'Loading file %s...' % filename
     return loader(f)
 
+def _load_csv(file):
+    import csv
+    reader = csv.reader(file)
+    meta = reader.next()
+    data = []
+    for row in reader:
+        doc = {}
+        for i, cell in enumerate(row):
+            doc[meta[i]] = cell
+        data.append(doc)
+    return data
+
 def _get_loader(filename):
     # XXX add SQL loaders; this implies switching storage modules, too
     if filename.endswith('.yaml'):
@@ -94,6 +106,8 @@ def _get_loader(filename):
     elif filename.endswith('.json'):
         import json
         loader = json.load
+    elif filename.endswith('.csv'):
+        loader = _load_csv
     else:
         raise ValueError, 'unknown data file type: %s' % filename
     return loader

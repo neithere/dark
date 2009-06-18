@@ -2,59 +2,57 @@
 
 """
 >>> import datetime
->>> from datashaping.db import Dataset
+>>> from datashaping.query import Query
+>>> from datashaping.storage.memory import MemoryCollection
 >>> from datashaping.aggregates import Avg, Count
 >>> import yaml
 >>> data = yaml.load(open('tests/people.yaml'))
->>> people = Dataset(data)
->>> people.inspect() == {'website': 3, 'born': 18, 'name': 18, 'nick': 4,
-...                      'age': 16, 'gender': 16, 'occupation': 16,
-...                      'fullname': 8, 'residence': 1}
-True
->>> len(people.all())   # results are found
+>>> storage = MemoryCollection(data)
+>>> people = Query(storage=storage)
+>>> len(people)   # results are found
 18
->>> len(people.all())   # iterator is not exhausted
+>>> len(people)   # iterator is not exhausted
 18
 >>> people.find()[3]
 <Document 3>
 
 # "exists" lookup type
 
->>> len(people.all().find(website__exists=True))
+>>> len(people.find(website__exists=True))
 3
->>> len(people.all().exclude(website__exists=True))
+>>> len(people.exclude(website__exists=True))
 15
->>> len(people.all().find(website__exists=False))
+>>> len(people.find(website__exists=False))
 15
->>> len(people.all().exclude(website__exists=False))
+>>> len(people.exclude(website__exists=False))
 3
->>> len(people.all().find(nick__exists=True))
+>>> len(people.find(nick__exists=True))
 5
->>> len(people.all().find(website__exists=True, nick__exists=True))
+>>> len(people.find(website__exists=True, nick__exists=True))
 1
->>> len(people.all().find(website__exists=True, nick__exists=False))
+>>> len(people.find(website__exists=True, nick__exists=False))
 2
->>> len(people.all().find(website__exists=False, nick__exists=True))
+>>> len(people.find(website__exists=False, nick__exists=True))
 4
->>> len(people.all().find(website__exists=False, nick__exists=False))
+>>> len(people.find(website__exists=False, nick__exists=False))
 11
->>> len(people.all().find(website__exists=True).find(nick__exists=True))
+>>> len(people.find(website__exists=True).find(nick__exists=True))
 1
->>> len(people.all().find(website__exists=True).exclude(nick__exists=True))
+>>> len(people.find(website__exists=True).exclude(nick__exists=True))
 2
->>> len(people.all().find(website__exists=True).exclude(nick__exists=True).find(born__country='Finland'))
+>>> len(people.find(website__exists=True).exclude(nick__exists=True).find(born__country='Finland'))
 1
 
 
 # "filled" lookup type
 
->>> len(people.all().find(nick__filled=True))
+>>> len(people.find(nick__filled=True))
 4
->>> len(people.all().find(nick__filled=False))
+>>> len(people.find(nick__filled=False))
 14
->>> len(people.all().find(nick__exists=True, nick__filled=False))
+>>> len(people.find(nick__exists=True, nick__filled=False))
 1
->>> len(people.all().exclude(nick__filled=True))
+>>> len(people.exclude(nick__filled=True))
 14
 
 
@@ -62,9 +60,9 @@ True
 
 >>> len(people.find(born__city__not=None))
 17
->>> len(people.all().exclude(born__city=None))     # same as previous, different syntax
+>>> len(people.exclude(born__city=None))     # same as previous, different syntax
 17
->>> people.all().exclude(born__city=None).count()  # same as previous, yet another syntax
+>>> people.exclude(born__city=None).count()  # same as previous, yet another syntax
 17
 >>> people.find(born__country='England')
 [<Document 0>, <Document 2>]
@@ -76,7 +74,7 @@ True
 11
 >>> len(people.find(born__country='USA')) + len(people.find(born__country='England'))
 9
->>> len(people.all().exclude(born__country__in=['USA','England']))
+>>> len(people.exclude(born__country__in=['USA','England']))
 9
 >>> [p.name for p in people.find(born__country='USA', gender__not='male')]    # multiple conditions
 ['Anita Borg', 'Kathleen Antonelli', 'Jean Bartik']
@@ -86,14 +84,8 @@ True
 [('Guido van Rossum', 49), ('Theo de Raadt', 41), ('Linus Torvalds', 40)]
 >>> [(p.name,p.age) for p in people.find(age__gt=100)]
 [('Thomas Fowler', 232), ('Conrad Palm', 102)]
->>> item = people.all()[11]
->>> item
-<Document 11>
->>> item._dict == None   # empty dict
-True
->>> item.name
-'Richard Stallman'
->>> item._dict == {'name': 'Richard Stallman',
+>>> item = people[11]
+>>> item._data == {'name': 'Richard Stallman',
 ...                'fullname': {'first':  'Richard',
 ...                             'middle': 'Matthew',
 ...                             'last':   'Stallman'},
@@ -106,6 +98,8 @@ True
 ...                'occupation': 'President of the FSF',
 ...                'website': 'http://stallman.org'}
 True
+>>> item.name
+'Richard Stallman'
 >>> people.values_for('born__country')
 ['England', 'Finland', 'Netherlands', 'New Zealand', 'Norway', 'South Africa', 'Sweden', 'Switzerland', 'USA']
 
@@ -269,56 +263,9 @@ Average male from Seattle, USA is 54.0 years old
 >>> [p.name for p in people.find(born__country='USA').exclude(gender='male')]
 ['Anita Borg', 'Kathleen Antonelli', 'Jean Bartik']
 
-#>>> results = people.all().group_by('born__country', 'born__city').order_by('age')
+#>>> results = people.group_by('born__country', 'born__city').order_by('age')
 #>>> results
 #{ ('USA', 'New York'): [<Document 1>, <Document 2>]
 #}
-
-#-----------------------+
-# Dataset._unwrap_value |
-#-----------------------+
-
->>> d = Dataset([])
->>> x = d._unwrap_value('foo', 'bar')
->>> dict(x) == dict([('foo', 'bar')])
-True
->>> x = d._unwrap_value('foo', ['bar','quux'])
->>> dict(x) == dict([('foo', 'bar'),
-...                  ('foo', 'quux')])
-True
->>> x = d._unwrap_value('foo', {'bar': 'quux'})
->>> dict(x) == dict([('foo__bar', 'quux')])
-True
->>> x = d._unwrap_value('foo', {'bar': [123, 456]})
->>> dict(x) == dict([('foo__bar', 123),
-...                  ('foo__bar', 456)])
-True
->>> x = d._unwrap_value('foo', {'bar': {'quux': 123}})
->>> dict(x) == dict([('foo__bar__quux', 123)])
-True
->>> x = d._unwrap_value('foo', {'bar': {'quux': [123, 456]}})
->>> dict(x) == dict([('foo__bar__quux', 123),
-...                  ('foo__bar__quux', 456)])
-True
->>> x = d._unwrap_value('foo', {'bar': [{'quux': [123, 456], 'quack': 789}]})
->>> dict(x) == dict([('foo__bar__quux', 123),
-...                  ('foo__bar__quux', 456),
-...                  ('foo__bar__quack', 789)])
-True
->>> x = d._unwrap_value('foo', datetime.date(2009, 6, 2))
->>> dict(x) == dict([('foo', datetime.date(2009, 6, 2)),
-...                  ('foo__year', 2009),
-...                  ('foo__month', 6),
-...                  ('foo__day', 2)])
-True
-
-# >>> x = d._unwrap_value('foo', datetime.datetime(2009, 6, 2, 16, 42))
-# >>> dict(x) == dict([('foo', datetime.datetime(2009, 6, 2, 16, 42)),
-# ...                  ('foo__year', 2009),
-# ...                  ('foo__month', 6),
-# ...                  ('foo__day', 2),
-# ...                  ('foo__hour', 16),
-# ...                  ('foo__minute', 42)])
-# True
 
 """

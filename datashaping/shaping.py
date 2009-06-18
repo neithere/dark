@@ -9,7 +9,6 @@
 #  Software Foundation. See the file README for copying conditions.
 #
 
-import db
 import math
 from aggregates import *
 
@@ -77,30 +76,33 @@ class CatchAllLevel(object):
 
 def cast(basic_query, factor_names=None, pivot_factors=None, *aggregates):
     """
-    Returns a table summarizing data grouped by given factors.
-    Calculates aggregated values. If aggregate is not defined, Count() is used.
-    Supports pivoting (i.e. using factor levels as columns).
+    Creates a table summarizing data grouped by given factors. Calculates
+    aggregated values. If aggregate is not defined, all items in the query are
+    counted. Pivoting (i.e. using factor levels as columns) is also supported.
 
     The name "cast" stands for "casting melt data" and is a reference to Hadley
     Wickham's package "reshape" for R language (http://had.co.nz/reshape/),
     though internally these packages have little in common.
 
-    `basic_query` is a Query instance (pre-filtered or not) on which the table
-    is going to be built.
+    :param basic_query: a :class:`Query <datashaping.query.Query>` instance
+        (pre-filtered or not) on which the table is going to be built.
 
-    `factor_names` is an optional list of keys by which data will be grouped.
-    Their names will go into the table heading, and their values will be used
-    to calculate aggregated values. If more than one factor is specified, they
-    will be grouped hierarchically from left to right.
+    :param factor_names: an optional list of keys by which data will be grouped.
+        Their names will go into the table heading, and their values will be used
+        to calculate aggregated values. If more than one factor is specified,
+        they will be grouped hierarchically from left to right.
 
-    `pivot_factors` is an optional list of keys which values will go into the
-    table heading along with factor names so that extra columns with
-    aggregated values will be added for each possible factor level (key value).
+    :param pivot_factors: is an optional list of keys which values will go into
+        the table heading along with factor names so that extra columns with
+        aggregated values will be added for each possible factor level (key value).
 
-    `aggregates` is an optional list of Aggregate instances. Some aggregates
-    require a factor name (i.e. key). Examples: Count(), Sum('price').
-    Aggregates will be calculated for each combination of factors and for each
-    pivoted factor level. If aggregates are not specified, a Count() is added.
+    :param aggregates: is an optional list of Aggregate instances. Some aggregates
+        require a factor name (i.e. key). Examples: `Count()`, `Sum('price')`.
+        Aggregates will be calculated for each combination of factors and for
+        each pivoted factor level. If aggregates are not specified,
+        :class:`Count <datashaping.aggregates.Count>` instance is added.
+
+    :returns: a list of lists, i.e. a table.
 
     See tests for usage examples.
     """
@@ -195,7 +197,7 @@ def cast(basic_query, factor_names=None, pivot_factors=None, *aggregates):
 def cast_cons(*args, **kwargs):
     """
     Wrapper for cast function for usage from console. Prints a simplified table
-    using ASCII art. Quick and dirty.
+    using ASCII art.
     """
     print_table(cast(*args, **kwargs))
 
@@ -229,7 +231,7 @@ def print_table_rotated():
 def summary(query, key):
     """
     Prints a summary for given key in given query.
-    (see 'summary' function in R language).
+    (see `summary` function in R language).
     """
     head = ('min', '1st qu.', 'median', 'average', '3rd qu.', 'max')
     stats = (

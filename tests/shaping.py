@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 """
->>> from datashaping.db import Dataset
+>>> from datashaping.query import Query
+>>> from datashaping.storage.memory import MemoryCollection
 >>> from datashaping.aggregates import Avg, Count, Max, Median
 >>> from datashaping.shaping import cast_cons, stdev, summary
 >>> import yaml
 >>> data = yaml.load(open('tests/people.yaml'))
->>> people = Dataset(data)
->>> q = people.all()
+>>> q = Query(storage=MemoryCollection(data))
 
 # note: function cast_cons() is a simple wrapper for cast(), prints a basic table
 
@@ -62,7 +62,7 @@
  |      3 |   13 |         18 |
  +--------+------+------------+
 
->>> cast_cons(people.all(), [], ['born__country'], Count('nick'))
+>>> cast_cons(q, [], ['born__country'], Count('nick'))
  +---------+---------+-------------+-------------+--------+--------------+--------+-------------+-----+-------------+
  | England | Finland | Netherlands | New Zealand | Norway | South Africa | Sweden | Switzerland | USA | Count(nick) |
  +---------+---------+-------------+-------------+--------+--------------+--------+-------------+-----+-------------+
@@ -209,7 +209,7 @@
 
 # city key not present, level empty, use higher level query
 
->>> cast_cons(people.find(nick='Kay'), ['name', 'born__country', 'born__city'])
+>>> cast_cons(q.find(nick='Kay'), ['name', 'born__country', 'born__city'])
  +--------------------+---------------+------------+------------+
  |               name | born__country | born__city | Count(all) |
  +--------------------+---------------+------------+------------+

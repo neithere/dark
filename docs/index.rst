@@ -3,15 +3,23 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to DataShaping's documentation!
-=======================================
+Python DataShaping
+==================
+
+DataShaping is an abstraction layer for various data sources enabling high-level
+queries for data analysis. Includes pythonic API for YAML, JSON and CSV files.
+Hopefully will also connect to SQL databases (probably through SQLAlchemy).
+Aims to port some reporting features of R language to the Python world.
 
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
+   storage
    query
+   document
+   aggregates
    shaping
 
 Indices and tables

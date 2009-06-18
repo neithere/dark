@@ -2,9 +2,10 @@
 
 """
 >>> import yaml
->>> from datashaping.db import Dataset
+>>> from datashaping.query import Query
+>>> from datashaping.storage.memory import MemoryCollection
 >>> from datashaping.aggregates import Avg, Count, Max, Median, Min, NA, Qu1, Qu3, Sum
->>> people = Dataset(yaml.load(open('tests/people.yaml'))).all()
+>>> people = Query(storage=MemoryCollection(yaml.load(open('tests/people.yaml'))))
 
 # All aggregates
 

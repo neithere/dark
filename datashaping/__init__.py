@@ -12,5 +12,6 @@
 __version__ = '0.2.2'
 
 from .aggregates import *
-from .db import *
+from .storage import *
+from .query import *
 from .shaping import *
