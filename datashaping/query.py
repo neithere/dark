@@ -68,8 +68,9 @@ class Query(CachedIterator):
         self._aggregates = []
         self._annotations = {}  # calculated aggregates in form {'items_count': 123}
         #self._group_by = group_by
-        self._order_by = order_by or []
-        self._order_reversed = order_reversed
+        self._order_by = {}
+        if order_by:
+            self._order_by = dict(Query._resolve_ordering_key(k) for k in order_by)
         # cache flags
         self._executed = False
         self._prepared = False
@@ -122,15 +123,17 @@ class Query(CachedIterator):
         """
         return self._clone(extra_lookups=[(k, v, False) for k, v in kw.items()])
 
+    @staticmethod
+    def _resolve_ordering_key(key):
+        if key[0] == '-':   # a faster way to say .startswith('-')
+            key = key[1:]
+            reverse = True
+        else:
+            reverse = False
+        return key, reverse
+
     def order_by(self, *keys):
-        # FIXME reverse bool defined by last key; must be separate for each
-        for key in keys:
-            if key[0] == '-':   # a faster way to say .startswith('-')
-                key = key[1:]
-                rev = True
-            else:
-                rev = False
-        return self._clone(order_by=keys, order_reversed=rev)
+        return self._clone(order_by=keys)
 
     def values_for(self, key):
         """
@@ -200,8 +203,7 @@ class Query(CachedIterator):
             # superclass).
             if self._order_by:
                 self._ids = self._storage.find_ids_sorted(self._lookups,
-                                                          self._order_by,
-                                                          self._order_reversed)
+                                                          self._order_by)
             else:
                 self._ids = list(self._storage.find_ids(*self._lookups))
             self._executed = True

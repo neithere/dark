@@ -92,21 +92,21 @@ class MemoryCollection(BaseCollection):
                 except: pass
         return safe_value
 
-    def find_ids_sorted(self, conditions, sort_by, reverse=False):
+    def find_ids_sorted(self, conditions, order_by):
         """
         Wrapper for `~datashaping.storage.dataset.find_ids`, allows to sort items
         by given keys and, optionally, to reverse the order.
+
+        :param order_by: a dictionary in the form ``{key: reverse}`` where
+            ``key`` is a data keys by which to sort, and ``reverse`` is boolean
+            which, being True, reverses the ordering by this key.
         """
         # TODO: sorting by nested keys, e.g. born__country
-        # TODO: reverse certaing keys, not the whole sort, e.g. ['age','-name']
-        if isinstance(sort_by, (str,unicode)):
-            sort_by = [sort_by]
-        def key_func(x):
-            item = self.fetch_one(x)
-            return [ item[k] for k in sort_by if k in item ]
-        return sorted(self.find_ids(*conditions),
-                      key=key_func,
-                      reverse=reverse)
+        ids = list(self.find_ids(*conditions))
+        for key, reverse in order_by.items():
+            ids.sort(key=lambda idx: self.fetch_one(idx).get(key, None),
+                     reverse=reverse)
+        return ids
 
     def find_ids(self, *conditions):
         """
