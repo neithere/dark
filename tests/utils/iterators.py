@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
->>> from datashaping.iterating import CachedIterator
+>>> from datashaping.utils.iterators import CachedIterator
 >>> make_iterator = lambda: CachedIterator(iterable=(x for x in xrange(1,16)), chunk_size=10)
 >>> str(make_iterator())
 '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]'

@@ -12,7 +12,7 @@
 import datetime
 from warnings import warn
 
-from iterating import CachedIterator
+from utils.iterators import CachedIterator
 #from aggregates import *
 from storage.base import BaseCollection
 from document import Document
