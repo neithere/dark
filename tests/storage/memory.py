@@ -13,6 +13,14 @@
 ...                       'fullname': 8, 'residence': 1}
 True
 
+# iterators as data source
+
+>>> storage = MemoryCollection( iter([{'x':'foo'}, {'x':'bar'}, {'x':'quux'}]) )
+>>> list( storage.fetch([1,2]) )
+[{'x': 'bar'}, {'x': 'quux'}]
+>>> storage.fetch_one(0)
+{'x': 'foo'}
+
 #--------------------------------+
 # MemoryCollection._unwrap_value |
 #--------------------------------+

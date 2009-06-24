@@ -23,7 +23,7 @@ class MemoryCollection(BaseCollection):
     Nested lists and dictionaries are supported.
     """
     def __init__(self, data):
-        self.data = data
+        self.data = data if isinstance(data, (list,tuple)) else list(data)
         self._build_index()
 
     #-------------------+
