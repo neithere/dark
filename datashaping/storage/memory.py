@@ -19,7 +19,7 @@ class MemoryCollection(BaseCollection):
     """
     A query tool for a list of dictionaries wholly loaded into memory.
     Can be loaded from JSON, YAML, CSV, etc.
-    
+
     Nested lists and dictionaries are supported.
     """
     def __init__(self, data):
@@ -30,6 +30,10 @@ class MemoryCollection(BaseCollection):
     #  Basic query API  |
     #-------------------+
 
+    def fetch(self, ids):
+        "Returns a list of dictionaries filtered by their indices in the collection."
+        return (self.data[i] for i in ids)
+
     def fetch_one(self, i):
         "Returns a dictionary by list index."
         try:
@@ -37,76 +41,6 @@ class MemoryCollection(BaseCollection):
         except IndexError:
             raise IndexError, 'tried to access item %d in a collection which '\
                               'contains only %d items.' % (i, len(self.data))
-
-    def fetch(self, ids):
-        "Returns a list of dictionaries filtered by their indices in the collection."
-        return (self.data[i] for i in ids)
-
-    def values_for(self, key, filter_by=None):
-        """
-        Returns a sorted list of distinct values existing for given key.
-        Caches results for given key.
-        If `filter_by` (a list of integers) is specified, returns only values that
-        exist for these ids.
-        """
-        # get and cache lookup
-        if not key in self._index_values_by_key:
-            self._index_values_by_key[key] = sorted( self._index.get(key, {}) )
-        ids = self._index_values_by_key[key]
-
-        if not filter_by:
-            return ids
-
-        filter_by = filter_by if isinstance(filter_by, set) else set(filter_by)
-        return [value for value in ids
-                if filter_by.intersection(self.ids_by(key,value))]
-
-    def ids_by(self, key, value):
-        "Returns indices of items exactly matching given key and value."
-        return self._index.get(key, {}).get(value, [])
-
-    def _get_safe_comparison_value(self, value, other):
-        """
-        Expects two values. Returns the first one, converted to match the other's
-        type (if this is possible). If the value cannot be coerced to a matching
-        type, TypeError is raised.
-        """
-        safe_value = value
-
-        # dates
-        if isinstance(other, (datetime.date, datetime.datetime)):
-            # if other value is a date, try converting ours to date, too;
-            # if this is not possible, the comparison is simply wrong
-            # because the data types do not match.
-            
-            # coerce string to datetime
-            if isinstance(value, basestring):
-                try:
-                    safe_value = datetime.datetime.strptime(value, '%Y-%m-%d')
-                except ValueError, e:
-                    raise TypeError, 'Could not coerce string to date: %s' % e.message
-            # coerce datetime to date
-            if isinstance(other, datetime.date):
-                try:
-                    safe_value = safe_value.date()
-                except: pass
-        return safe_value
-
-    def find_ids_sorted(self, conditions, order_by):
-        """
-        Wrapper for `~datashaping.storage.dataset.find_ids`, allows to sort items
-        by given keys and, optionally, to reverse the order.
-
-        :param order_by: a dictionary in the form ``{key: reverse}`` where
-            ``key`` is a data keys by which to sort, and ``reverse`` is boolean
-            which, being True, reverses the ordering by this key.
-        """
-        # TODO: sorting by nested keys, e.g. born__country
-        ids = list(self.find_ids(*conditions))
-        for key, reverse in order_by.items():
-            ids.sort(key=lambda idx: self.fetch_one(idx).get(key, None),
-                     reverse=reverse)
-        return ids
 
     def find_ids(self, *conditions):
         """
@@ -187,9 +121,101 @@ class MemoryCollection(BaseCollection):
 
         return iter(ids_include - ids_exclude)
 
+    def find_ids_sorted(self, conditions, order_by):
+        """
+        Wrapper for `~datashaping.storage.dataset.find_ids`, allows to sort items
+        by given keys and, optionally, to reverse the order.
+
+        :param order_by: a dictionary in the form ``{key: reverse}`` where
+            ``key`` is a data keys by which to sort, and ``reverse`` is boolean
+            which, being True, reverses the ordering by this key.
+        """
+        # TODO: sorting by nested keys, e.g. born__country
+        ids = list(self.find_ids(*conditions))
+        for key, reverse in order_by.items():
+            ids.sort(key=lambda idx: self.fetch_one(idx).get(key, None),
+                     reverse=reverse)
+        return ids
+
+    def ids_by(self, key, value):
+        "Returns indices of items exactly matching given key and value."
+        return self._index.get(key, {}).get(value, [])
+
+    def inspect(self):
+        "Shows how many times each key is found in the collection."
+        keys = {}
+        for item in self.data:
+            for key in item.keys():
+                if item[key] != None:
+                    keys[key] = keys.setdefault(key, 0) + 1
+        return keys
+
+    def values_for(self, key, filter_by=None):
+        """
+        Returns a sorted list of distinct values existing for given key.
+        Caches results for given key.
+        If `filter_by` (a list of integers) is specified, returns only values that
+        exist for these ids.
+        """
+        # get and cache lookup
+        if not key in self._index_values_by_key:
+            self._index_values_by_key[key] = sorted( self._index.get(key, {}) )
+        ids = self._index_values_by_key[key]
+
+        if not filter_by:
+            return ids
+
+        filter_by = filter_by if isinstance(filter_by, set) else set(filter_by)
+        return [value for value in ids
+                if filter_by.intersection(self.ids_by(key,value))]
+
     #-------------------+
     #  Service methods  |
     #-------------------+
+
+    def _build_index(self):
+        "Creates index for data. Representation: key -> value -> list_of_IDs."
+        #if __debug__: print 'building index...'
+
+        self._index = {}
+
+        for i, item in enumerate(self.data):
+            for key in item:
+                val = item[key]
+                for k, v in self._unwrap_value(key, val):
+                    self._index.setdefault(k, {}).setdefault(v, []).append(i)
+
+        # reset other indices built ad hoc
+        self._index_values_by_key = {}
+
+        #if __debug__: print 'done.'
+
+    def _get_safe_comparison_value(self, value, other):
+        """
+        Expects two values. Returns the first one, converted to match the other's
+        type (if this is possible). If the value cannot be coerced to a matching
+        type, TypeError is raised.
+        """
+        safe_value = value
+
+        # dates
+        if isinstance(other, (datetime.date, datetime.datetime)):
+            # if other value is a date, try converting ours to date, too;
+            # if this is not possible, the comparison is simply wrong
+            # because the data types do not match.
+
+            # coerce string to datetime
+            if isinstance(value, basestring):
+                try:
+                    safe_value = datetime.datetime.strptime(value, '%Y-%m-%d')
+                except ValueError, e:
+                    raise TypeError, 'Could not coerce string to date: %s' % e.message
+            # coerce datetime to date
+            if isinstance(other, datetime.date):
+                try:
+                    safe_value = safe_value.date()
+                except: pass
+        return safe_value
 
     def _nest(self, parent_key, key):
         return Condition.LOOKUP_DELIMITER.join([parent_key, key])
@@ -238,32 +264,6 @@ class MemoryCollection(BaseCollection):
                 warn(u'Expected string, number, boolean or None, got %s while '\
                      'indexing data.' % value, UserWarning)
             return [(key, value)]
-
-    def _build_index(self):
-        "Creates index for data. Representation: key -> value -> list_of_IDs."
-        #if __debug__: print 'building index...'
-
-        self._index = {}
-
-        for i, item in enumerate(self.data):
-            for key in item:
-                val = item[key]
-                for k, v in self._unwrap_value(key, val):
-                    self._index.setdefault(k, {}).setdefault(v, []).append(i)
-
-        # reset other indices built ad hoc
-        self._index_values_by_key = {}
-
-        #if __debug__: print 'done.'
-
-    def inspect(self):
-        "Shows how many times each key is found in the collection."
-        keys = {}
-        for item in self.data:
-            for key in item.keys():
-                if item[key] != None:
-                    keys[key] = keys.setdefault(key, 0) + 1
-        return keys
 
     #------------------+
     #  XXX  TODO  XXX  |

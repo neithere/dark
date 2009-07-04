@@ -79,22 +79,22 @@ class BaseCollection(object):
     #  Basic query API  |
     #-------------------+
 
-    def fetch_one(self, i):
-        raise NotImplementedError
-
     def fetch(self, ids):
         raise NotImplementedError
 
-    def values_for(self, key, filter_by=None):
-        raise NotImplementedError
-
-    def ids_by(self, key, value):
+    def fetch_one(self, i):
         raise NotImplementedError
 
     def find_ids(self, *criteria):
         raise NotImplementedError
 
+    def ids_by(self, key, value):
+        raise NotImplementedError
+
     def inspect(self):
+        raise NotImplementedError
+
+    def values_for(self, key, filter_by=None):
         raise NotImplementedError
 
 class BaseCondition(object):
@@ -206,6 +206,7 @@ class BaseCondition(object):
     def key(self):
         if not self._key: self._resolve_lookup()
         return self._key
+
     @property
     def lookup_type(self):
         if not self._type: self._resolve_lookup()
