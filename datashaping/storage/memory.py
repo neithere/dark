@@ -30,6 +30,31 @@ class MemoryCollection(BaseCollection):
     #  Basic query API  |
     #-------------------+
 
+    def delete(self, ids, refresh_index=True):
+        """
+        Deletes items with given primary keys from the storage.
+
+        :param ids: list of primary keys to be removed from the storage
+        :param refresh_index: if `True` (default), storage index will be rebuilt
+            after removing of items. Set it to `False` to save on this process,
+            but make sure not to query by fields that existed in the deleted
+            items because queries on outdated index may return broken data.
+
+        """
+        # check if all given primary keys exist
+        try:
+            [self.data[pk] for pk in ids]
+        except IndexError:
+            raise IndexError('Could not delete documents from storage: wrong '
+                             'primary key(s) provided (%s)' % ids)
+        # delete them (i.e. replace data with empty dictionaries)
+        for pk in ids:
+            self.data[pk] = { }
+        if refresh_index:
+            # TODO: do not rebuild the whole index, just remove certain values
+            #       from index if they contain only references to removed items
+            self._build_index()
+
     def fetch(self, ids):
         "Returns a list of dictionaries filtered by their indices in the collection."
         return (self.data[i] for i in ids)
