@@ -30,16 +30,41 @@ class MemoryCollection(BaseCollection):
     #  Basic query API  |
     #-------------------+
 
+    def add(self, item, refresh_index=True):
+        """
+        Adds a dictionary to the storage. Returns newly created primary key.
+
+        :param item: a `dict` or `dict`-like object
+        :param refresh_index: if `True` (default), item data will be appended
+            to the storage's search index. Set it to `False` to save on this
+            process, but make sure not to query on fields that exist in this
+            item because queries on outdated index may return broken data.
+        """
+        assert hasattr(item, '__getitem__'), 'item must provide dictionary methods'
+        self.data.append(item)
+        pk = len(self.data) - 1
+        if refresh_index:
+            self._build_index_for_item(pk, item)
+        return pk
+
     def delete(self, ids, refresh_index=True):
         """
         Deletes items with given primary keys from the storage.
 
         :param ids: list of primary keys to be removed from the storage
-        :param refresh_index: if `True` (default), storage index will be rebuilt
-            after removing of items. Set it to `False` to save on this process,
-            but make sure not to query by fields that existed in the deleted
-            items because queries on outdated index may return broken data.
+        :param refresh_index: if `True` (default), item data will be removed
+            from the storage's search index. Set it to `False` to save on this
+            process, but make sure not to query by fields that existed in the
+            deleted items because queries on outdated index may return broken data.
 
+        .. note::
+
+            Only document data is removed from the storage. The slot remains
+            due to implementation details (collection is a sequence, primary
+            keys are positions in the sequence).
+
+            If you happen to save data from the storage, please ensure that you
+            omit empty items before serialization. (Unless you want to keep them.)
         """
         # check if all given primary keys exist
         try:
@@ -49,11 +74,9 @@ class MemoryCollection(BaseCollection):
                              'primary key(s) provided (%s)' % ids)
         # delete them (i.e. replace data with empty dictionaries)
         for pk in ids:
-            self.data[pk] = { }
-        if refresh_index:
-            # TODO: do not rebuild the whole index, just remove certain values
-            #       from index if they contain only references to removed items
-            self._build_index()
+            if refresh_index:
+                self._remove_index_for_item(pk)
+            self.data[pk] = None
 
     def fetch(self, ids):
         "Returns a list of dictionaries filtered by their indices in the collection."
@@ -148,8 +171,8 @@ class MemoryCollection(BaseCollection):
 
     def find_ids_sorted(self, conditions, order_by):
         """
-        Wrapper for `~datashaping.storage.dataset.find_ids`, allows to sort items
-        by given keys and, optionally, to reverse the order.
+        Wrapper for :meth:`~datashaping.storage.memory.MemoryCollection.find_ids`,
+        allows to sort items by given keys and, optionally, to reverse the order.
 
         :param order_by: a dictionary in the form ``{key: reverse}`` where
             ``key`` is a data keys by which to sort, and ``reverse`` is boolean
@@ -179,8 +202,9 @@ class MemoryCollection(BaseCollection):
         """
         Returns a sorted list of distinct values existing for given key.
         Caches results for given key.
-        If `filter_by` (a list of integers) is specified, returns only values that
-        exist for these ids.
+
+        :param filter_by: a list of integers. If specified, only values that
+            exist for these ids are returned.
         """
         # get and cache lookup
         if not key in self._index_values_by_key:
@@ -204,16 +228,38 @@ class MemoryCollection(BaseCollection):
 
         self._index = {}
 
-        for i, item in enumerate(self.data):
-            for key in item:
-                val = item[key]
-                for k, v in self._unwrap_value(key, val):
-                    self._index.setdefault(k, {}).setdefault(v, []).append(i)
+        for pk, data in enumerate(self.data):
+            self._build_index_for_item(pk, data)
 
         # reset other indices built ad hoc
         self._index_values_by_key = {}
 
         #if __debug__: print 'done.'
+
+    def _build_index_for_item(self, pk, data):
+        "Builds index for given item. See _build_index."
+        for key, val in data.iteritems():
+            for k, v in self._unwrap_value(key, val):
+                self._index.setdefault(k, {}).setdefault(v, []).append(pk)
+
+    def _remove_index_for_item(self, pk):
+        "Removes index for given item. See _build_index."
+        data = self.data[pk]
+        for key, val in data.iteritems():
+            for k, v in self._unwrap_value(key, val):
+                try:
+                    i = self._index[k][v].index(pk)
+                    if 0 <= i:
+                        self._index[k][v].pop(i)
+                        if __debug__: print 'removed index for pk=%d by %s' % (pk, k)
+                except KeyError, ValueError:
+                    pass
+                else:
+                    # truncate index if branch became empty
+                    if not self._index[k][v]:
+                        del self._index[k][v]
+                    if not self._index[k]:
+                        del self._index[k]
 
     def _get_safe_comparison_value(self, value, other):
         """

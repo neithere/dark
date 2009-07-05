@@ -79,6 +79,9 @@ class BaseCollection(object):
     #  Basic query API  |
     #-------------------+
 
+    def add(self, item):
+        raise NotImplementedError
+
     def delete(self, ids):
         raise NotImplementedError
 

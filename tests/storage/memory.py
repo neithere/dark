@@ -3,7 +3,7 @@
 """
 >>> import datetime
 >>> from datashaping.query import Query
->>> from datashaping.storage.memory import MemoryCollection
+>>> from datashaping.storage.memory import MemoryCollection, Condition
 >>> from datashaping.aggregates import Avg, Count
 >>> import yaml
 >>> data = yaml.load(open('tests/people.yaml'))
@@ -20,6 +20,29 @@ True
 [{'x': 'bar'}, {'x': 'quux'}]
 >>> storage.fetch_one(0)
 {'x': 'foo'}
+
+# adding and indexing items
+
+>>> list(storage.find_ids())
+[0, 1, 2]
+>>> storage.add({'abc': 'xyz', 'x': 'foo'})
+3
+>>> list(storage.find_ids(Condition('abc__exists', True)))
+[3]
+>>> list(storage.find_ids(Condition('x__exact', 'foo')))
+[0, 3]
+>>> storage._index['x'] == {'foo': [0, 3], 'bar': [1], 'quux': [2] }
+True
+
+# deleting and un-indexing items
+
+>>> storage.delete([2])
+>>> storage.fetch_one(2)
+>>> storage._index['x'] == {'foo': [0, 3], 'bar': [1] }
+True
+>>> storage.delete([0])
+>>> storage._index['x'] == {'foo': [3], 'bar': [1] }
+True
 
 #--------------------------------+
 # MemoryCollection._unwrap_value |
