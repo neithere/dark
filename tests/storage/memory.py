@@ -44,6 +44,19 @@ True
 >>> storage._index['x'] == {'foo': [3], 'bar': [1] }
 True
 
+# deleting and subsequent searching with no conditions
+
+>>> for d in {'x':'foo'}, {'x':'bar'}, {'x':'quux'}:
+...     storage.add(d)
+4
+5
+6
+>>> list(storage.find_ids())
+[1, 3, 4, 5, 6]
+>>> storage.delete([3])
+>>> list(storage.find_ids())
+[1, 4, 5, 6]
+
 #--------------------------------+
 # MemoryCollection._unwrap_value |
 #--------------------------------+

@@ -24,6 +24,8 @@ class MemoryCollection(BaseCollection):
     """
     def __init__(self, data):
         self.data = data if isinstance(data, (list,tuple)) else list(data)
+        self._deleted = set()
+
         self._build_index()
 
     #-------------------+
@@ -59,9 +61,9 @@ class MemoryCollection(BaseCollection):
 
         .. note::
 
-            Only document data is removed from the storage. The slot remains
-            due to implementation details (collection is a sequence, primary
-            keys are positions in the sequence).
+            Only document *data* is removed from the storage. The identifier (PK)
+            remains due to implementation details (collection is a sequence,
+            primary keys are positions in the sequence).
 
             If you happen to save data from the storage, please ensure that you
             omit empty items before serialization. (Unless you want to keep them.)
@@ -74,6 +76,7 @@ class MemoryCollection(BaseCollection):
                              'primary key(s) provided (%s)' % ids)
         # delete them (i.e. replace data with empty dictionaries)
         for pk in ids:
+            self._deleted.add(pk)
             if refresh_index:
                 self._remove_index_for_item(pk)
             self.data[pk] = None
@@ -109,7 +112,8 @@ class MemoryCollection(BaseCollection):
             )
         """
         if not conditions:
-            return iter(xrange(0, len(self.data)))
+            return iter(pk for pk in xrange(0, len(self.data))
+                            if pk not in self._deleted)
 
         # intersecting subsets
         ids_include = None
