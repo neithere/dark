@@ -9,9 +9,9 @@
 #  Software Foundation. See the file README for copying conditions.
 #
 
-__version__ = '0.3.1'
+__version__ = '0.3.2'
 
-from .aggregates import *
-from .storage import *
-from .query import *
-from .shaping import *
+from aggregates import *
+from storage import *
+from query import *
+from shaping import *
