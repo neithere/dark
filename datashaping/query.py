@@ -123,6 +123,18 @@ class Query(CachedIterator):
         """
         return self._clone(extra_lookups=[(k, v, False) for k, v in kw.items()])
 
+    def keys(self):
+	"""
+	Returns sorted list of keys available for given query.
+	"""
+	if self._lookups:
+	    ids = self._execute()
+	    if not ids:
+		return []
+        else:
+    	    ids = None
+        return self._storage.keys(filter_by=ids)
+
     @staticmethod
     def _resolve_ordering_key(key):
         if key[0] == '-':   # a faster way to say .startswith('-')

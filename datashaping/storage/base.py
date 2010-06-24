@@ -100,6 +100,9 @@ class BaseCollection(object):
     def inspect(self):
         raise NotImplementedError
 
+    def keys(self):
+	raise NotImplementedError
+
     def values_for(self, key, filter_by=None):
         raise NotImplementedError
 

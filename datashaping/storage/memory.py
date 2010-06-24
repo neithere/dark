@@ -202,6 +202,14 @@ class MemoryCollection(BaseCollection):
                     keys[key] = keys.setdefault(key, 0) + 1
         return keys
 
+    def keys(self, filter_by=None):
+        """
+        Returns a list of all keys that exist in this storage.
+        """
+        if filter_by:
+            raise NotImplementedError('Filtering is not yet supported in keys().')
+        return self._index.keys()
+
     def values_for(self, key, filter_by=None):
         """
         Returns a sorted list of distinct values existing for given key.
