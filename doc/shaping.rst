@@ -1,9 +1,9 @@
 Shaping Data
 ============
 
-.. module:: datashaping.shaping
+.. module:: dark.shaping
 
-The whole datashaping package is built mainly for the function :func:`cast`.
+The whole dark package is built mainly for the function :func:`cast`.
 It can be used to build HTML tables, etc. For interactive shell there is a wrapper
 function :func:`cast_cons` which redirects arguments to :func:`cast` and prints
 results as a nice-looking ASCII table.

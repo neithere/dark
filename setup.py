@@ -3,38 +3,38 @@
 #
 #  Copyright (c) 2009 Andy Mikhailenko and contributors
 #
-#  This file is part of Datashaping.
+#  This file is part of Dark.
 #
-#  Datashaping is free software under terms of the GNU Lesser
+#  Dark is free software under terms of the GNU Lesser
 #  General Public License version 3 (LGPLv3) as published by the Free
 #  Software Foundation. See the file README for copying conditions.
 #
 
-"Datashaping setup"
+"Dark setup"
 
 from setuptools import setup, find_packages
-import datashaping
+import dark
 
-long_description = "Datashaping is an engine providing very simple pythonic API"\
-                   " allowing for complex queries on structured data."
+
+long_description = open('README').read()
 setup(
-    name         = 'datashaping',
-    version      = datashaping.__version__,
-    packages     = find_packages(exclude=['example_data']),
-    
+    name         = 'dark',
+    version      = dark.__version__,
+    packages     = find_packages(),
+
     requires     = ['python (>= 2.5)'],
-    provides     = ['datashaping'],
-    
-    description  = 'A pythonic query API for structured data.',
+    provides     = ['dark'],
+
+    description  = 'Data Analysis and Reporting Kit (DARK).',
     long_description = long_description,
     author       = 'Andy Mikhailenko',
     author_email = 'andy@neithere.net',
-    url          = 'http://bitbucket.org/neithere/datashaping/',
-    download_url = 'http://bitbucket.org/neithere/datashaping/src/',
+    url          = 'http://bitbucket.org/neithere/dark/',
+    download_url = 'http://bitbucket.org/neithere/dark/src/',
     license      = 'GNU Lesser General Public License (LGPL), Version 3',
-    keywords     = 'query database api',
+    keywords     = 'data analysis mining reporting pivot query database',
     classifiers  = [
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Environment :: Console',
         'Environment :: Plugins',
         'Intended Audience :: Developers',

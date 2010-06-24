@@ -2,9 +2,9 @@
 
 """
 >>> import yaml
->>> from datashaping.query import Query
->>> from datashaping.storage.memory import MemoryCollection
->>> from datashaping.aggregates import Avg, Count, Max, Median, Min, NA, Qu1, Qu3, Sum
+>>> from dark.query import Query
+>>> from dark.storage.memory import MemoryCollection
+>>> from dark.aggregates import Avg, Count, Max, Median, Min, NA, Qu1, Qu3, Sum
 >>> people = Query(storage=MemoryCollection(yaml.load(open('tests/people.yaml'))))
 
 # All aggregates

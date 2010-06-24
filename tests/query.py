@@ -2,9 +2,9 @@
 
 """
 >>> import datetime
->>> from datashaping.query import Query
->>> from datashaping.storage.memory import MemoryCollection
->>> from datashaping.aggregates import Avg, Count
+>>> from dark.query import Query
+>>> from dark.storage.memory import MemoryCollection
+>>> from dark.aggregates import Avg, Count
 >>> import yaml
 >>> data = yaml.load(open('tests/people.yaml'))
 >>> storage = MemoryCollection(data)

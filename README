@@ -1,18 +1,22 @@
-Datashaping is an engine providing very simple pythonic API allowing for complex
-queries on structured data. Initially written by Andy Mikhailenko in 2009 with
-invaluable feedback from Ilya Musabirov.
-See the file AUTHORS for a complete authors list of this application.
+`Dark` is an acronym for "Data Analysis and Reporting Kit". It helps find
+patterns in a set of irregular (mixed) data, sort various documents and pile
+them in stacks by certain properties, define schemata for existing data, build
+pivot tables and calculate various aggregates. Great for CSV, JSON, etc.
+
+Initially written by Andy Mikhailenko in 2009 with invaluable feedback from
+Ilya Musabirov. See the file AUTHORS for a complete authors list of this
+application.
 
 Please feel free to submit patches, report bugs or request features:
 
-    http://bitbucket.org/neithere/datashaping/
+    http://bitbucket.org/neithere/dark/
 
-Datashaping is free software; you can redistribute it and/or modify it under
+Dark is free software; you can redistribute it and/or modify it under
 the terms of the GNU Lesser General Public License as published by the Free
 Software Foundation; either version 3 of the License, or (at your option) any
 later version.
 
-Datashaping is distributed in the hope that it will be useful, but WITHOUT ANY
+Dark is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 

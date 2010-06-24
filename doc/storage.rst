@@ -1,7 +1,7 @@
 Storage
 =======
 
-.. automodule:: datashaping.storage.memory
+.. automodule:: dark.storage.memory
    :members:
 
 Updating collections
@@ -21,7 +21,7 @@ small part of the index according to item data.
 
 Saving changed data is *not* supported. You can easily do it yourself, e.g.::
 
-    >>> from datashaping.storage.memory import MemoryCollection
+    >>> from dark.storage.memory import MemoryCollection
     >>> import json
     >>> file_in = open('in.json')
     >>> data = json.load(file_in)
@@ -31,7 +31,7 @@ Saving changed data is *not* supported. You can easily do it yourself, e.g.::
     >>> json.dump(storage.data, file_out)
 
 There may be some quirks with changing the already indexed data. For example,
-instances of :class:`~datashaping.query.Query` fetch data once and then cache
+instances of :class:`~dark.query.Query` fetch data once and then cache
 the results until are destroyed themselves. This means that already executed
 queries will *not* be updated even if you empty the whole storage.
 
@@ -40,7 +40,7 @@ Editing documents
 
 .. warning::
 
-    :class:`~datashaping.query.Document` instances (and the underlying data
+    :class:`~dark.query.Document` instances (and the underlying data
     items) are not immutable, but they do *not* keep storage index in sync with
     their contents.
 
@@ -50,12 +50,12 @@ the index goes out of sync, queries become unreliable and may return broken
 data.
 
 To "manually" rebuild storage index in a
-:class:`~datashaping.storage.memory.MemoryCollection` instance you should call
+:class:`~dark.storage.memory.MemoryCollection` instance you should call
 its method `_build_index`. This operation is time-consuming, so you will not
 want to perform it too frequently. While it is possible that in the future an
-updated :class:`~datashaping.query.Document` instance would automatically
+updated :class:`~dark.query.Document` instance would automatically
 efficiently update the corresponding
-:class:`~datashaping.storage.memory.MemoryCollection` index (remove/add parts),
+:class:`~dark.storage.memory.MemoryCollection` index (remove/add parts),
 currently it's not the case.
 
 Also remember to manually save storage data to a file or DB after changing it.

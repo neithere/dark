@@ -2,16 +2,16 @@
 #
 #  Copyright (c) 2009 Andy Mikhailenko and contributors
 #
-#  This file is part of Datashaping.
+#  This file is part of Dark.
 #
-#  Datashaping is free software under terms of the GNU Lesser
+#  Dark is free software under terms of the GNU Lesser
 #  General Public License version 3 (LGPLv3) as published by the Free
 #  Software Foundation. See the file README for copying conditions.
 #
 
 import datetime
 from warnings import warn
-from datashaping.storage.base import BaseCollection, BaseCondition
+from dark.storage.base import BaseCollection, BaseCondition
 
 __all__ = ['MemoryCollection', 'Condition']
 
@@ -98,7 +98,7 @@ class MemoryCollection(BaseCollection):
         Returns indices of items matching given criteria.
 
         :param conditions: an optional list of
-            :class:`~datashaping.storage.dataset.Condition` instances.
+            :class:`~dark.storage.dataset.Condition` instances.
 
         A Query constructed like this::
 
@@ -175,7 +175,7 @@ class MemoryCollection(BaseCollection):
 
     def find_ids_sorted(self, conditions, order_by):
         """
-        Wrapper for :meth:`~datashaping.storage.memory.MemoryCollection.find_ids`,
+        Wrapper for :meth:`~dark.storage.memory.MemoryCollection.find_ids`,
         allows to sort items by given keys and, optionally, to reverse the order.
 
         :param order_by: a dictionary in the form ``{key: reverse}`` where

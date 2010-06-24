@@ -2,9 +2,9 @@
 #
 #  Copyright (c) 2009 Andy Mikhailenko and contributors
 #
-#  This file is part of Datashaping.
+#  This file is part of Dark.
 #
-#  Datashaping is free software under terms of the GNU Lesser
+#  Dark is free software under terms of the GNU Lesser
 #  General Public License version 3 (LGPLv3) as published by the Free
 #  Software Foundation. See the file README for copying conditions.
 #
@@ -26,7 +26,7 @@ class Query(CachedIterator):
 
     The API closely resembles that of Django.
 
-    :param storage: a :class:`~datashaping.storage.base.BaseCollection` subclass
+    :param storage: a :class:`~dark.storage.base.BaseCollection` subclass
         instance
 
     Usage::
@@ -104,14 +104,14 @@ class Query(CachedIterator):
 
     def exclude(self, **kw):
         """
-        Returns a new :class:`~datashaping.query.Query` instance with
-        existing minus given criteria. See :func:`~datashaping.query.Query.find`.
+        Returns a new :class:`~dark.query.Query` instance with
+        existing minus given criteria. See :func:`~dark.query.Query.find`.
         """
         return self._clone(extra_lookups=[(k, v, True) for k, v in kw.items()])
 
     def find(self, **kw):
         """
-        Returns a new :class:`~datashaping.query.Query` instance with
+        Returns a new :class:`~dark.query.Query` instance with
         existing plus given criteria.
 
         No query is executed on calling this method. Despite database lookups
@@ -152,7 +152,7 @@ class Query(CachedIterator):
         Returns sorted distinct values for given key filtered by current query.
 
         This method is a terminal clause, it does not return another lazy
-        :class:`~datashaping.query.Query` instance but actually executes
+        :class:`~dark.query.Query` instance but actually executes
         the query and returns data extracted from the results. However, it's OK
         to call ``query.values_for(...)`` followed by iteration over query itself
         because the results are retrieved only once and then reused.

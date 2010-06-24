@@ -2,9 +2,9 @@
 #
 #  Copyright (c) 2009 Andy Mikhailenko and contributors
 #
-#  This file is part of Datashaping.
+#  This file is part of Dark.
 #
-#  Datashaping is free software under terms of the GNU Lesser
+#  Dark is free software under terms of the GNU Lesser
 #  General Public License version 3 (LGPLv3) as published by the Free
 #  Software Foundation. See the file README for copying conditions.
 #
@@ -84,7 +84,7 @@ def cast(basic_query, factor_names=None, pivot_factors=None, *aggregates):
     Wickham's package "reshape" for R language (http://had.co.nz/reshape/),
     though internally these packages have little in common.
 
-    :param basic_query: a :class:`Query <datashaping.query.Query>` instance
+    :param basic_query: a :class:`Query <dark.query.Query>` instance
         (pre-filtered or not) on which the table is going to be built.
 
     :param factor_names: an optional list of keys by which data will be grouped.
@@ -100,7 +100,7 @@ def cast(basic_query, factor_names=None, pivot_factors=None, *aggregates):
         require a factor name (i.e. key). Examples: `Count()`, `Sum('price')`.
         Aggregates will be calculated for each combination of factors and for
         each pivoted factor level. If aggregates are not specified,
-        :class:`Count <datashaping.aggregates.Count>` instance is added.
+        :class:`Count <dark.aggregates.Count>` instance is added.
 
     :returns: a list of lists, i.e. a table.
 

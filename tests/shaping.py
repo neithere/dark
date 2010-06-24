@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 """
->>> from datashaping.query import Query
->>> from datashaping.storage.memory import MemoryCollection
->>> from datashaping.aggregates import Avg, Count, Max, Median
->>> from datashaping.shaping import cast_cons, stdev, summary
+>>> from dark.query import Query
+>>> from dark.storage.memory import MemoryCollection
+>>> from dark.aggregates import Avg, Count, Max, Median
+>>> from dark.shaping import cast_cons, stdev, summary
 >>> import yaml
 >>> data = yaml.load(open('tests/people.yaml'))
 >>> q = Query(storage=MemoryCollection(data))
