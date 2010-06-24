@@ -39,4 +39,10 @@
 >>> str(Min('age', NA.reject).count_for(people))
 'None'
 
+# Avg
+
+>>> rows = [{'x': 0.5}, {'x': 1.5}]
+>>> float(Avg('x').count_for(rows))
+1.0
+
 """
