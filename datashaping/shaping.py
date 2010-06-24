@@ -31,10 +31,10 @@ class Factor(object):
         """
         Finds factor levels filtered by given query and appends them to the whole
         list of levels. Returns only the newly found levels.
-        
+
         If no level could be found, a dummy empty level is inserted so that
         all columns are present regardless of data availability.
-        
+
         Warning: query uniqueness is not checked. If same query provided twice,
         duplicates will occur.
         """
@@ -106,7 +106,7 @@ def cast(basic_query, factor_names=None, pivot_factors=None, *aggregates):
 
     See tests for usage examples.
     """
-    
+
     # XXX this function actually *groups* data and creates a table.
     #     Move the grouping stuff to Query code as a method?
 
@@ -117,7 +117,7 @@ def cast(basic_query, factor_names=None, pivot_factors=None, *aggregates):
 
     factors = [Factor(n) for n in factor_names]
     for num, factor in enumerate(factors):
-        if num is 0:
+        if num == 0:
             # find all available levels
             factor.add_levels(basic_query)
         else:
