@@ -28,6 +28,7 @@ setup(
     packages     = find_packages(),
 
     provides     = ['dark'],
+    obsoletes    = ['datashaping'],
     requires     = ['python (>= 2.5)', 'docu (>= 0.20)'],
     test_requires = ['nose', 'pyyaml'],
 
