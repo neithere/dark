@@ -1,7 +1,25 @@
+Dark
+====
+
 `Dark` is an acronym for "Data Analysis and Reporting Kit". It helps find
 patterns in a set of irregular (mixed) data, sort various documents and pile
 them in stacks by certain properties, define schemata for existing data, build
 pivot tables and calculate various aggregates. Great for CSV, JSON, etc.
+
+Installation
+------------
+
+    $ pip install dark
+
+Documentation
+-------------
+
+See the `complete documentation`_ for details.
+
+.. _complete documentation: http://packages.python.org/dark
+
+Author
+------
 
 Initially written by Andy Mikhailenko in 2009 with invaluable feedback from
 Ilya Musabirov. See the file AUTHORS for a complete authors list of this
@@ -11,14 +29,18 @@ Please feel free to submit patches, report bugs or request features:
 
     http://bitbucket.org/neithere/dark/
 
-Dark is free software; you can redistribute it and/or modify it under
-the terms of the GNU Lesser General Public License as published by the Free
-Software Foundation; either version 3 of the License, or (at your option) any
-later version.
+Licensing
+---------
+
+Dark is free software; you can redistribute it and/or modify it under the terms
+of the GNU Lesser General Public License as published by the Free Software
+Foundation; either version 3 of the License, or (at your option) any later
+version.
 
 Dark is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
-A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+
 
 You should have received a copy of the GNU Lesser General Public License along
 with this program; see the file COPYING.LESSER.
