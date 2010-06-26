@@ -1,191 +1,168 @@
 # A (incomplete and probably inaccurate) list of famous people
 # related to Computer Science
-- name: Thomas Fowler
+- first_name: Thomas 
+  last_name: Fowler
   gender: male
   age: 232
-  born:
-    date:    1777-01-01
-    country: England
-    city:    Great Torrington
+  birth_date:    1777-01-01
+  birth_country: England
+  birth_city:    Great Torrington
   occupation: invented mechanical calculator
-- name: Conrad Palm
+- first_name: Conrad 
+  last_name: Palm
   nick: Conny
   gender: male
   age: 102
-  born:
-    date:    1907-01-01
-    country: Sweden
-    city:    Stockholm
-- name: Alan Turing
-  fullname:
-    first:   Alan
-    middle: Mathison
-    last:   Turing
+  birth_date:    1907-01-01
+  birth_country: Sweden
+  birth_city:    Stockholm
+- first_name:   Alan
+  middle_name: Mathison
+  last_name:   Turing
   gender: male
   age: 97
-  born:
-    date:    1912-06-23
-    country: England
-    city:    Maida Vale, London
+  birth_date:    1912-06-23
+  birth_country: England
+  birth_city:    Maida Vale, London
   occupation:
     - mathematician
     - logician
     - cryptanalyst
     - computer scientist
-- name: Kathleen Antonelli
+- first_name: Kathleen 
+  last_name: Antonelli
   nick: Kay
   gender: female
   age: 88
-  born:
-    date:    1921-02-12
-    country: USA
-    city:    null
+  birth_date:    1921-02-12
+  birth_country: USA
+  birth_city:    null
   occupation: original ENIAC programmer
-- name: Jean Bartik
+- first_name: Jean 
+  last_name: Bartik
   gender: female
   age: 85
-  born:
-    date:    1924-12-27
-    country: USA
-    city:    Betty Jean Jennings
+  birth_date:    1924-12-27
+  birth_country: USA
+  birth_city:    Betty Jean Jennings
   occupation: programmer
-- name: Kristen Nygaard
+- first_name: Kristen 
+  last_name: Nygaard
   nick: null
   gender: male
   age: 83
-  born:
-    date:    1926-08-27
-    country: Norway
-    city:    Oslo
+  birth_date:    1926-08-27
+  birth_country: Norway
+  birth_city:    Oslo
   occupation:
     - mathematician
     - polititian
     - computer language pioneer
-- name: Edsger Wybe Dijkstra
+- first_name: Edsger 
+  middle_name: Wybe 
+  last_name: Dijkstra
   gender: male
   age: 79
-  born:
-    date:    1930-05-11
-    country: Netherlands
-    city:    Rotterdam
+  birth_date:    1930-05-11
+  birth_country: Netherlands
+  birth_city:    Rotterdam
   occupation: computer scientist
-- name: Niklaus Emil Wirth
+- first_name: Niklaus 
+  middle_name: Emil 
+  last_name: Wirth
   gender: male
   age: 75
-  born:
-    date:    1934-02-15
-    country: Switzerland
-    city:    Winterthur
+  birth_date:    1934-02-15
+  birth_country: Switzerland
+  birth_city:    Winterthur
   occupation: computer scientist
-- name: Donald Knuth
-  fullname:
-    first:  Donald
-    middle: Ervin
-    last:   Knuth
+- first_name:  Donald
+  middle_name: Ervin
+  last_name:   Knuth
   gender: male
   age: 72
-  born:
-    date:    1937-01-10
-    country: USA
-    city:    Milwaukee
+  birth_date:    1937-01-10
+  birth_country: USA
+  birth_city:    Milwaukee
   occupation: computer scientist
-- name: Anita Borg
-  fullname:
-    first: Anita
-    last:  Borg
+- first_name: Anita
+  last_name:  Borg
   gender: female
   age: 60
-  born:
-    date:    1949-01-17
-    country: USA
-    city:    Chicago
-- name: Stephen Wozniak
-  fullname:
-    first:  Stephen
-    middle: Gary
-    last:   Wozniak
+  birth_date:    1949-01-17
+  birth_country: USA
+  birth_city:    Chicago
+- first_name:  Stephen
+  middle_name: Gary
+  last_name:   Wozniak
   nick: Woz
   gender: male
   age: 59
-  born:
-    date:    1950-08-11
-    country: USA
-    city:    San Jose
+  birth_date:    1950-08-11
+  birth_country: USA
+  birth_city:    San Jose
   occupation: computer engineer
-- name: Richard Stallman
-  fullname:
-    first:  Richard
-    middle: Matthew
-    last:   Stallman
+- first_name:  Richard
+  middle_name: Matthew
+  last_name:   Stallman
   nick: rms
   gender: male
   age: 56
-  born:
-    date:    1953-03-16
-    country: USA
-    city:    New York
+  birth_date:    1953-03-16
+  birth_country: USA
+  birth_city:    New York
   occupation: President of the FSF
   website: http://stallman.org
-- name: Larry Wall
+- first_name: Larry 
+  last_name: Wall
   gender: male
   age: 54
-  born:
-    date:    1954-09-27
-    country: USA
-    city:    Seattle
+  birth_date:    1954-09-27
+  birth_country: USA
+  birth_city:    Seattle
   occupation:
     - programmer
     - author of Perl language
   website: http://wall.org/~larry
-- name: Linus Torvalds
-  fullname:
-    first:  Linus
-    middle: Benedict
-    last:   Torvalds
+- first_name:  Linus
+  middle_name: Benedict
+  last_name:   Torvalds
   gender: male
   age: 40
-  born:
-    date:    1969-12-28
-    country: Finland
-    city:    Helsinki
+  birth_date:    1969-12-28
+  birth_country: Finland
+  birth_city:    Helsinki
   occupation: Software engineer
   website: http://torvalds-family.blogspot.com/
-- name: Ross Ihaka
+- first_name: Ross 
+  last_name: Ihaka
   gender: male
-  born:
-    country: New Zealand
-    city:    Auckland
+  birth_country: New Zealand
+  birth_city:    Auckland
   occupation: author of R language
-- name: Robert Gentleman
-  born:
-    country: New Zealand
-    city:    Auckland
+- first_name: Robert 
+  last_name: Gentleman
+  birth_country: New Zealand
+  birth_city:    Auckland
   occupation: author of R language
-- name: Guido van Rossum
-  fullname:
-    first: Guido
-    last:  van Rossum
+- first_name: Guido
+  last_name:  van Rossum
   gender: male
   age: 49
-  born:
-    date:    1960-01-31
-    country: Netherlands
-    city:    Amsterdam
+  birth_date:    1960-01-31
+  birth_country: Netherlands
+  birth_city:    Amsterdam
   occupation:
     - computer programmer
     - author of Python language
-- name: Theo de Raadt
-  fullname:
-    first: Theo
-    last: de Raadt
+- first_name: Theo
+  last_name: de Raadt
   age: 41
-  born:
-    date: 1968-05-19
-    country: South Africa
-    city: Pretoria
-  residence:
-    country: Canada
-    city: Calgary
+  birth_date: 1968-05-19
+  birth_country: South Africa
+  birth_city: Pretoria
+  residence_country: Canada
+  residenc_city: Calgary
   occupation:
     - NetBSD founder
     - OpenBSD founder

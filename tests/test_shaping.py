@@ -1,13 +1,42 @@
 # -*- coding: utf-8 -*-
 
-"""
->>> from dark.query import Query
->>> from dark.storage.memory import MemoryCollection
+# The table building kit is much easier to test with doctests so here we go.
+# This test is automatically discovered by nose.collector (provided that option
+# --with-doctest and --doctest-tests options are set).
+
+import docu
+import yaml
+
+
+TMP_DB_PATH = '_test_shaping.shelve'
+
+
+class CatchAll(docu.Document):
+    pass
+
+
+class Person(docu.Document):
+    def __unicode__(self):
+        return u'{first_name} {last_name}'.format(
+            first_name = self.get('first_name', '?'),
+            last_name = self.get('last_name', '?'),
+        )
+
+
+db = docu.get_db(backend='docu.ext.shelve_db', path=TMP_DB_PATH)
+db.clear()
+
+raw_items = yaml.load(open('tests/people.yaml'))
+for data in raw_items:
+    Person(**data).save(db)
+
+q = CatchAll.objects(db).order_by('birth_country')
+people = Person.objects(db).order_by('birth_country')
+
+
+__doc__ = """
 >>> from dark.aggregates import Avg, Count, Max, Median
 >>> from dark.shaping import cast_cons, stdev, summary
->>> import yaml
->>> data = yaml.load(open('tests/people.yaml'))
->>> q = Query(storage=MemoryCollection(data))
 
 # note: function cast_cons() is a simple wrapper for cast(), prints a basic table
 
@@ -62,7 +91,7 @@
  |      3 |   13 |         18 |
  +--------+------+------------+
 
->>> cast_cons(q, [], ['born__country'], Count('nick'))
+>>> cast_cons(q, [], ['birth_country'], Count('nick'))
  +---------+---------+-------------+-------------+--------+--------------+--------+-------------+-----+-------------+
  | England | Finland | Netherlands | New Zealand | Norway | South Africa | Sweden | Switzerland | USA | Count(nick) |
  +---------+---------+-------------+-------------+--------+--------------+--------+-------------+-----+-------------+
@@ -71,9 +100,9 @@
 
 # count, implicit aggregate
 
->>> cast_cons(q, ['born__country'])
+>>> cast_cons(q, ['birth_country'])
  +---------------+------------+
- | born__country | Count(all) |
+ | birth_country | Count(all) |
  +---------------+------------+
  |       England |          2 |
  |       Finland |          1 |
@@ -88,9 +117,9 @@
 
 # count, explicit aggregate
 
->>> cast_cons(q, ['born__country'], [], Count())
+>>> cast_cons(q, ['birth_country'], [], Count())
  +---------------+------------+
- | born__country | Count(all) |
+ | birth_country | Count(all) |
  +---------------+------------+
  |       England |          2 |
  |       Finland |          1 |
@@ -105,9 +134,9 @@
 
 # count, multiple factors (two)
 
->>> cast_cons(q, ['born__country','born__city'], [], Count())
+>>> cast_cons(q, ['birth_country','birth_city'], [], Count())
  +---------------+---------------------+------------+
- | born__country |          born__city | Count(all) |
+ | birth_country |          birth_city | Count(all) |
  +---------------+---------------------+------------+
  |       England |    Great Torrington |          1 |
  |       England |  Maida Vale, London |          1 |
@@ -146,9 +175,9 @@
 
 # aggregate by one key, Avg
 
->>> cast_cons(q, ['born__country'], [], Avg('age'))
+>>> cast_cons(q, ['birth_country'], [], Avg('age'))
  +---------------+----------+
- | born__country | Avg(age) |
+ | birth_country | Avg(age) |
  +---------------+----------+
  |       England |    164.5 |
  |       Finland |     40.0 |
@@ -163,9 +192,9 @@
 
 # aggregate by one key, Max
 
->>> cast_cons(q, ['born__country'], [], Max('age'))
+>>> cast_cons(q, ['birth_country'], [], Max('age'))
  +---------------+----------+
- | born__country | Max(age) |
+ | birth_country | Max(age) |
  +---------------+----------+
  |       England |      232 |
  |       Finland |       40 |
@@ -180,9 +209,9 @@
 
 # aggregate by multiple keys
 
->>> cast_cons(q, ['born__country','born__city','gender'], [], Avg('age'))
+>>> cast_cons(q, ['birth_country','birth_city','gender'], [], Avg('age'))
  +---------------+---------------------+--------+----------+
- | born__country |          born__city | gender | Avg(age) |
+ | birth_country |          birth_city | gender | Avg(age) |
  +---------------+---------------------+--------+----------+
  |       England |    Great Torrington |   male |    232.0 |
  |       England |  Maida Vale, London |   male |     97.0 |
@@ -205,22 +234,22 @@
 
 # multiple aggregates -- NOT YET
 
-#>>> cast_cons(q, ['born__country','born__city'], [], [Avg('age'), Min('age'), Max('age')])
+#>>> cast_cons(q, ['birth_country','birth_city'], [], [Avg('age'), Min('age'), Max('age')])
 
 # city key not present, level empty, use higher level query
 
->>> cast_cons(q.find(nick='Kay'), ['name', 'born__country', 'born__city'])
- +--------------------+---------------+------------+------------+
- |               name | born__country | born__city | Count(all) |
- +--------------------+---------------+------------+------------+
- | Kathleen Antonelli |           USA |       None |          1 |
- +--------------------+---------------+------------+------------+
+>>> cast_cons(q.where(nick='Kay'), ['first_name', 'birth_country', 'birth_city'])
+ +------------+---------------+------------+------------+
+ | first_name | birth_country | birth_city | Count(all) |
+ +------------+---------------+------------+------------+
+ |   Kathleen |           USA |       None |          1 |
+ +------------+---------------+------------+------------+
 
 # city key not present, level empty, use higher level query
 
->>> cast_cons(q.find(nick='Kay'), ['born__city'])
+>>> cast_cons(q.where(nick='Kay'), ['birth_city'])
  +------------+------------+
- | born__city | Count(all) |
+ | birth_city | Count(all) |
  +------------+------------+
  |       None |          1 |
  +------------+------------+
@@ -229,9 +258,9 @@
 
 # pivoting by one factor
 
->>> cast_cons(q, ['born__country'], ['gender'])
+>>> cast_cons(q, ['birth_country'], ['gender'])
  +---------------+--------+------+------------+
- | born__country | female | male | Count(all) |
+ | birth_country | female | male | Count(all) |
  +---------------+--------+------+------------+
  |       England |      0 |    2 |          2 |
  |       Finland |      0 |    1 |          1 |
@@ -246,18 +275,18 @@
 
 # pivoting by multiple factors, one level
 
->>> cast_cons(q.find(born__country='England'), ['born__country'], ['born__city', 'gender'])
+>>> cast_cons(q.where(birth_country='England'), ['birth_country'], ['birth_city', 'gender'])
  +---------------+------------------+--------------------+------+------------+
- | born__country | Great Torrington | Maida Vale, London | male | Count(all) |
+ | birth_country | Great Torrington | Maida Vale, London | male | Count(all) |
  +---------------+------------------+--------------------+------+------------+
  |       England |                1 |                  1 |    2 |          2 |
  +---------------+------------------+--------------------+------+------------+
 
 # pivoting by multiple factors, multiple levels
 
->>> cast_cons(q.find(born__country__in=['Netherlands','Finland']), ['born__country'], ['born__city', 'gender'])
+>>> cast_cons(q.where(birth_country__in=['Netherlands','Finland']), ['birth_country'], ['birth_city', 'gender'])
  +---------------+-----------+----------+-----------+------+------------+
- | born__country | Amsterdam | Helsinki | Rotterdam | male | Count(all) |
+ | birth_country | Amsterdam | Helsinki | Rotterdam | male | Count(all) |
  +---------------+-----------+----------+-----------+------+------------+
  |       Finland |         0 |        1 |         0 |    1 |          1 |
  |   Netherlands |         1 |        0 |         1 |    2 |          2 |
@@ -265,16 +294,16 @@
 
 # pivoting without grouper factors
 
->>> cast_cons(q, [], ['born__country'], Count())
+>>> cast_cons(q, [], ['birth_country'], Count())
  +---------+---------+-------------+-------------+--------+--------------+--------+-------------+-----+------------+
  | England | Finland | Netherlands | New Zealand | Norway | South Africa | Sweden | Switzerland | USA | Count(all) |
  +---------+---------+-------------+-------------+--------+--------------+--------+-------------+-----+------------+
  |       2 |       1 |           2 |           2 |      1 |            1 |      1 |           1 |   7 |         18 |
  +---------+---------+-------------+-------------+--------+--------------+--------+-------------+-----+------------+
 
-# values are unwrapped (in this case some people had more than one occupation)
+# values are unwrapped (in this case some people had more than one occupation
 
->>> cast_cons(q, ['occupation'], ['gender'])
+>>> cast_cons(people, ['occupation'], ['gender'])
  +--------------------------------+--------+------+------------+
  |                     occupation | female | male | Count(all) |
  +--------------------------------+--------+------+------------+
@@ -301,9 +330,9 @@
 
 # all row cells are present regardless of data availability in grouper columns
 
->>> cast_cons(q, ['born__country', 'nick'], [], Count('nick'))
+>>> cast_cons(q, ['birth_country', 'nick'], [], Count('nick'))
  +---------------+-------+-------------+
- | born__country |  nick | Count(nick) |
+ | birth_country |  nick | Count(nick) |
  +---------------+-------+-------------+
  |       England |  None |         N/A |
  |       Finland |  None |         N/A |
@@ -325,7 +354,7 @@
  +-----+---------+--------+---------+---------+-----+
  | min | 1st qu. | median | average | 3rd qu. | max |
  +-----+---------+--------+---------+---------+-----+
- |  40 |    99.5 |   73.5 |    79.5 |    45.0 | 232 |
+ |  40 |    45.0 |   73.5 |    79.5 |    99.5 | 232 |
  +-----+---------+--------+---------+---------+-----+
 
 # standard deviation function
@@ -333,28 +362,8 @@
 >>> stdev(q, 'age')
 42.176101401288442
 
-# nested structures
-
->>> cast_cons(q, ['fullname__first'])
- +-----------------+------------+
- | fullname__first | Count(all) |
- +-----------------+------------+
- |            Alan |          1 |
- |           Anita |          1 |
- |          Donald |          1 |
- |           Guido |          1 |
- |           Linus |          1 |
- |         Richard |          1 |
- |         Stephen |          1 |
- |            Theo |          1 |
- +-----------------+------------+
-
->>> cast_cons(q, ['gender'], ['fullname__first'])
- +--------+------+-------+--------+-------+-------+---------+---------+------------+
- | gender | Alan | Anita | Donald | Guido | Linus | Richard | Stephen | Count(all) |
- +--------+------+-------+--------+-------+-------+---------+---------+------------+
- | female |    0 |     1 |      0 |     0 |     0 |       0 |       0 |          3 |
- |   male |    1 |     0 |      1 |     1 |     1 |       1 |       1 |         13 |
- +--------+------+-------+--------+-------+-------+---------+---------+------------+
-
 """
+
+if __name__=='__main__':
+    import doctest
+    doctest.testmod()

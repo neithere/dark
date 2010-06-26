@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-#  Copyright (c) 2009 Andy Mikhailenko and contributors
+#  Copyright (c) 2009—2010 Andy Mikhailenko and contributors
 #
 #  This file is part of Dark.
 #
@@ -16,59 +16,102 @@
 #     int(calc)                  # here the calculation is actually done
 #     int(calc)                  # cached result returned, no recalc
 
+"""
+Aggregates
+==========
+"""
+
+
 __all__ = ['Aggregate', 'Avg', 'Count', 'Max', 'Median', 'Min', 'Sum', 'Qu1', 'Qu3', 'NA']
+
 
 class AggregationError(Exception):
     pass
+
 
 class LazyCalculation(object):
     def __init__(self, agg, values):
         self.agg    = agg
         self.values = values
         self.result = None
+
     def get_result(self):
         if len(self.values) == 0:
             return None
         try:
             self.result = self.result or self.agg.calc(self.values)
         except TypeError, e:
-            raise AggregationError, 'Could not perform %s aggregation on key "%s": '\
-                                    'data contains a non-numeric value. Original '\
-                                    'message: %s' % (self.agg.name(), self.agg.key, e.message)
+            raise AggregationError('Could not perform %s aggregation on key '
+                                   '"%s" data contains a non-numeric value. '
+                                   'Original message: %s' % (self.agg.name(),
+                                   self.agg.key, e.message))
         return self.result
-    __int__     = lambda self: int(self.get_result())
-    __float__   = lambda self: float(self.get_result())
-    __str__     = lambda self: str(self.get_result())
-    __repr__    = lambda self: u'<lazy %s by %s>' % (self.agg.name, '%d values'%len(self.values) if len(self.values) > 3 else self.values)
+
+    def __int__(self):
+        return int(self.get_result())
+
+    def __float__(self):
+        return float(self.get_result())
+
+    def __str__(self):
+        return str(self.get_result())
+
+    def __repr__(self):
+        return '<lazy {name} by {values}>'.format(
+            name = self.agg.name,
+            values = '{0} values'.format(
+                len(self.values) if len(self.values) > 3 else self.values
+            )
+        )
+
 
 class NA(object):
-    "Policy against N/A values. To be used in Aggregate constructors: Min('key', NA.skip)."
+    """
+    Policy against N/A values. To be used in Aggregate constructors::
+
+        Min('key', NA.skip).
+
+    """
     skip, reject = 1, 2
-    __str__  = lambda self: 'N/A'
-    __repr__ = lambda self: '<N/A>'
+
+    def __str__(self):
+        return 'N/A'
+
+    def __repr__(self):
+        return '<N/A>'
+
 
 class Aggregate(object):
     def __init__(self):
         self.key = None
-    __str__  = lambda self: '%s(%s)' % (self.__class__.__name__, self.key or 'all')
-    __repr__ = lambda self: '<%s>' % str(self)
-    name = lambda self: self.__class__.__name__
+
+    def __str__(self):
+        return '%s(%s)' % (self.__class__.__name__, self.key or 'all')
+
+    def __repr__(self):
+        return '<%s>' % str(self)
+
+    def name(self):
+        return self.__class__.__name__
+
 
 class AggregateManager(Aggregate):
     "TODO factory?"
+
     def __init__(self, key, na_policy=NA.skip):
         self.key = key
         self.na_policy = na_policy
+
     def count_for(self, dictionaries):
         values = []
         for item in dictionaries:
             value = item.get(self.key, None)
             if value is None:
                 # decide what to do if a None is found in values (i.e. a value is not available)
-                if self.na_policy is NA.reject:
+                if self.na_policy == NA.reject:
                     # reset the whole calculated value to None if at least one value is N/A
                     return None
-                elif self.na_policy is NA.skip:
+                elif self.na_policy == NA.skip:
                     # silently ignore items with empty values, count only existing integers; same as "rm.na" in R (?)
                     continue
             values.append(value)
@@ -76,8 +119,10 @@ class AggregateManager(Aggregate):
             return LazyCalculation(self, values)
         else:
             return NA()
+
     def calc(self, values):
         raise NotImplementedError
+
 
 # CLASSES THAT INHERIT TO AggregateManager
 
@@ -86,10 +131,12 @@ class Avg(AggregateManager):
     def calc(values):
         return float(sum(values, 0)) / len(values)
 
+
 class Max(AggregateManager):
     @staticmethod
     def calc(values):
         return max(values)
+
 
 class Median(AggregateManager):
     """
@@ -112,6 +159,8 @@ class Median(AggregateManager):
             upper = middle + 1
             return sum(values[lower:upper]) / 2.0
 
+
+
 """
 Almost as commonly used as the median are the quartiles, q0.25 and
 q0.75. Usually these are called the lower and upper quartiles,
@@ -122,26 +171,34 @@ folded first at the median, and the quartiles.
 -- http://mail.python.org/pipermail/python-list/2002-March/134190.html
 """
 
+
 class Qu1(Median):
-    "Calculates the q0.25. (NOTE: stub!)"
+    "Calculates the q0.25."
     def calc(self, values):
+        values = sorted(values)
         l = len(values) / 4
         return super(Qu1, self).calc(values[:l])
+
+
 class Qu3(Median):
-    "Calculates the q0.75. (NOTE: stub!)"
+    "Calculates the q0.75."
     def calc(self, values):
+        values = sorted(values)
         l = (len(values) / 4) * 3
         return super(Qu3, self).calc(values[l:])
+
 
 class Min(AggregateManager):
     @staticmethod
     def calc(values):
         return min(values)
 
+
 class Sum(AggregateManager):
     @staticmethod
     def calc(values):
         return sum(values, 0)
+
 
 class Count(AggregateManager):
     """
@@ -154,10 +211,7 @@ class Count(AggregateManager):
         # overload resource-consuming parent method if we can do without it
         if not key:
             self.count_for = self.calc
+
     @staticmethod
     def calc(values):
         return len(set(values))
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()

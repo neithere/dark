@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#  Copyright (c) 2009 Andy Mikhailenko and contributors
+#  Copyright (c) 2009—2010 Andy Mikhailenko and contributors
 #
 #  This file is part of Dark.
 #
@@ -22,8 +22,9 @@ setup(
     version      = dark.__version__,
     packages     = find_packages(),
 
-    requires     = ['python (>= 2.5)'],
     provides     = ['dark'],
+    requires     = ['python (>= 2.5)', 'docu (>= 0.20)'],
+    test_requires = ['nose', 'pyyaml'],
 
     description  = 'Data Analysis and Reporting Kit (DARK).',
     long_description = long_description,
@@ -49,4 +50,7 @@ setup(
         'Topic :: Office/Business :: Financial :: Spreadsheet',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
+
+    # release sanity check
+    test_suite = 'nose.collector',
 )

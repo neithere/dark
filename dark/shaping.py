@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-#  Copyright (c) 2009 Andy Mikhailenko and contributors
+#  Copyright (c) 2009—2010 Andy Mikhailenko and contributors
 #
 #  This file is part of Dark.
 #
@@ -9,8 +9,22 @@
 #  Software Foundation. See the file README for copying conditions.
 #
 
+"""
+Shaping the data
+================
+
+The whole library is built mainly for the function :func:`cast`. It can be used
+to build HTML tables, etc. For interactive shell there is a wrapper function
+:func:`cast_cons` which redirects arguments to :func:`cast` and prints results
+as a nice-looking ASCII table.
+"""
+
 import math
 from aggregates import *
+
+
+__all__ = ['cast', 'cast_cons', 'stdev', 'summary']
+
 
 # TODO: consider syntax like:
 #       people.group_by('country','city').pivot_by('gender').annotate(Avg('age'))
@@ -19,14 +33,22 @@ from aggregates import *
 
 # TODO: see cast() code for more TODOs :)
 
+
 class Factor(object):
-    "A factor is usually represented as a dictionary key or as a column of a RDB table."
+    """
+    A factor is usually represented as a dictionary key or as a column of a RDB
+    table.
+    """
     def __init__(self, key):
         self.key = key
         self.levels = []
-    __repr__ = lambda self: '<Factor %s>' % self.key
+
+    def __repr__(self):
+        return '<Factor {key}>'.format(key=self.key)
+
     def __iter__(self):
         return iter(self.levels)
+
     def add_levels(self, query):
         """
         Finds factor levels filtered by given query and appends them to the whole
@@ -38,15 +60,18 @@ class Factor(object):
         Warning: query uniqueness is not checked. If same query provided twice,
         duplicates will occur.
         """
-        new_levels = [Level(self,val,query) for val in query.values_for(self.key)] or [Level(self,None,query)]
+        new_levels = [Level(self,val,query) for val in
+                        sorted(query.values(self.key, unpack_lists=True))] or \
+                     [Level(self,None,query)]
         self.levels.extend(new_levels)
         return new_levels
+
 
 class Level(object):
     "A factor level, i.e. an existing value."
     def __init__(self, factor, value, query):
         self.value = value
-        self.query = query.find(**{factor.key: value})
+        self.query = query.where(**{factor.key: value})
         self.children = []
     def attach(self, levels):
         "Attaches a depending factor level to this level."
@@ -81,25 +106,31 @@ def cast(basic_query, factor_names=None, pivot_factors=None, *aggregates):
     counted. Pivoting (i.e. using factor levels as columns) is also supported.
 
     The name "cast" stands for "casting melt data" and is a reference to Hadley
-    Wickham's package "reshape" for R language (http://had.co.nz/reshape/),
-    though internally these packages have little in common.
+    Wickham's package `reshape`_ for R language, though internally these
+    packages have little in common.
 
-    :param basic_query: a :class:`Query <dark.query.Query>` instance
-        (pre-filtered or not) on which the table is going to be built.
+    .. _reshape: http://had.co.nz/reshape/
 
-    :param factor_names: an optional list of keys by which data will be grouped.
-        Their names will go into the table heading, and their values will be used
-        to calculate aggregated values. If more than one factor is specified,
-        they will be grouped hierarchically from left to right.
+    :param basic_query:
+        a :class:`Query <dark.query.Query>` instance (pre-filtered or not) on
+        which the table is going to be built.
 
-    :param pivot_factors: is an optional list of keys which values will go into
-        the table heading along with factor names so that extra columns with
-        aggregated values will be added for each possible factor level (key value).
+    :param factor_names:
+        optional list of keys by which data will be grouped. Their names
+        will go into the table heading, and their values will be used to
+        calculate aggregated values. If more than one factor is specified, they
+        will be grouped hierarchically from left to right.
 
-    :param aggregates: is an optional list of Aggregate instances. Some aggregates
-        require a factor name (i.e. key). Examples: `Count()`, `Sum('price')`.
-        Aggregates will be calculated for each combination of factors and for
-        each pivoted factor level. If aggregates are not specified,
+    :param pivot_factors:
+        optional list of keys which values will go into the table heading
+        along with factor names so that extra columns with aggregated values
+        will be added for each possible factor level (key value).
+
+    :param aggregates:
+        optional list of Aggregate instances. Some aggregates require a factor
+        name (i.e. key). Examples: `Count()`, `Sum('price')`. Aggregates will
+        be calculated for each combination of factors and for each pivoted a
+        factor level. If aggregates are not specified,
         :class:`Count <dark.aggregates.Count>` instance is added.
 
     :returns: a list of lists, i.e. a table.
@@ -155,8 +186,8 @@ def cast(basic_query, factor_names=None, pivot_factors=None, *aggregates):
 
         # collect pivot levels
         for factor in pivot_factors:
-            for level in last_level.query.values_for(factor):
-                query = last_level.query.find(**{factor:level})
+            for level in sorted(last_level.query.values(factor)):
+                query = last_level.query.where(**{factor:level})
                 if query.count() and level not in used_pivot_levels[factor]:
                     used_pivot_levels[factor].append(level)
 
@@ -167,7 +198,7 @@ def cast(basic_query, factor_names=None, pivot_factors=None, *aggregates):
         # insert pivot cells
         for factor in pivot_factors:
             for level in sorted(used_pivot_levels.get(factor,[])):
-                query = last_level.query.find(**{factor:level})
+                query = last_level.query.where(**{factor:level})
                 for aggregate in aggregates:
                     row.append(aggregate.count_for(query))
 
@@ -250,7 +281,3 @@ def stdev(query, key):
     deviations = [d[key] - int(avg) for d in query if key in d]
     variance = sum(x*x for x in deviations) / float(len(query)-1)
     return math.sqrt(variance)
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()

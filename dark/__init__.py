@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-#  Copyright (c) 2009 Andy Mikhailenko and contributors
+#  Copyright (c) 2009—2010 Andy Mikhailenko and contributors
 #
 #  This file is part of Dark.
 #
@@ -9,9 +9,7 @@
 #  Software Foundation. See the file README for copying conditions.
 #
 
-__version__ = '0.3.9'
+__version__ = '0.4.0'
 
 from aggregates import *
-from storage import *
-from query import *
 from shaping import *
