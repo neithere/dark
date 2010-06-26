@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#  Copyright (c) 2009—2010 Andy Mikhailenko and contributors
+#  Copyright (c) 2009—2010 Andrey Mikhailenko and contributors
 #
 #  This file is part of Dark.
 #
@@ -24,16 +24,16 @@ def get_readme():
 
 setup(
     name         = 'dark',
-    version      = '0.4.0',
+    version      = version,
     packages     = find_packages(),
 
     provides     = ['dark'],
     requires     = ['python (>= 2.5)', 'docu (>= 0.20)'],
     test_requires = ['nose', 'pyyaml'],
 
-    description  = 'Data Analysis and Reporting Kit (DARK).',
+    description  = 'Data Analysis and Reporting Kit (DARK)',
     long_description = get_readme(),
-    author       = 'Andy Mikhailenko',
+    author       = 'Andrey Mikhailenko',
     author_email = 'andy@neithere.net',
     url          = 'http://bitbucket.org/neithere/dark/',
     download_url = 'http://bitbucket.org/neithere/dark/src/',

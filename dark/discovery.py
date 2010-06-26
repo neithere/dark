@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-#  Copyright (c) 2009—2010 Andy Mikhailenko and contributors
+#  Copyright (c) 2009—2010 Andrey Mikhailenko and contributors
 #
 #  This file is part of Dark.
 #

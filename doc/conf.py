@@ -41,7 +41,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Dark'
-copyright = u'2009—2010, Andy Mikhailenko'
+copyright = u'2009—2010, Andrey Mikhailenko'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -176,7 +176,7 @@ htmlhelp_basename = 'Darkdoc'
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'Dark.tex', u'Dark Documentation',
-   u'Andy Mikhailenko', 'manual'),
+   u'Andrey Mikhailenko', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
