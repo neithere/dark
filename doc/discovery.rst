@@ -1,0 +1,2 @@
+.. automodule:: dark.discovery
+   :members:

@@ -12,14 +12,19 @@
 
 "Dark setup"
 
+import os
 from setuptools import setup, find_packages
-import dark
+
+from _version import version
 
 
-long_description = open('README').read()
+def get_readme():
+    f = os.path.abspath(os.path.join(os.path.dirname(__file__), 'README'))
+    return open(f).read()
+
 setup(
     name         = 'dark',
-    version      = dark.__version__,
+    version      = '0.4.0',
     packages     = find_packages(),
 
     provides     = ['dark'],
@@ -27,7 +32,7 @@ setup(
     test_requires = ['nose', 'pyyaml'],
 
     description  = 'Data Analysis and Reporting Kit (DARK).',
-    long_description = long_description,
+    long_description = get_readme(),
     author       = 'Andy Mikhailenko',
     author_email = 'andy@neithere.net',
     url          = 'http://bitbucket.org/neithere/dark/',

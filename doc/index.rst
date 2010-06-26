@@ -23,6 +23,7 @@ Contents:
 
    aggregates
    shaping
+   discovery
 
 Indices and tables
 ==================

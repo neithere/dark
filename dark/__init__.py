@@ -9,7 +9,6 @@
 #  Software Foundation. See the file README for copying conditions.
 #
 
-__version__ = '0.4.0'
-
 from aggregates import *
+from discovery import *
 from shaping import *
