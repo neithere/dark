@@ -61,7 +61,7 @@ class Factor(object):
         duplicates will occur.
         """
         new_levels = [Level(self,val,query) for val in
-                        sorted(query.values(self.key, unpack_lists=True))] or \
+                        sorted(query.values(self.key))] or \
                      [Level(self,None,query)]
         self.levels.extend(new_levels)
         return new_levels
