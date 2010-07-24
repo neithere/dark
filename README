@@ -6,6 +6,8 @@ patterns in a set of irregular (mixed) data, sort various documents and pile
 them in stacks by certain properties, define schemata for existing data, build
 pivot tables and calculate various aggregates. Great for CSV, JSON, etc.
 
+Moreover, it has cookies.
+
 Installation
 ------------
 

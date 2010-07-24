@@ -14,6 +14,8 @@ pivot tables and calculate various aggregates. Great for CSV, JSON, etc.
 `Dark` works with a number of databases (mainly key/value or document-oriented)
 and requires `Docu`_ for that.
 
+Moreover, it has cookies.
+
 .. _Docu: http://pypi.python.org/pypi/docu
 
 Contents:
