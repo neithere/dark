@@ -21,8 +21,13 @@ Aggregates
 ==========
 """
 
+from decimal import Decimal
+
 
 __all__ = ['Aggregate', 'Avg', 'Count', 'Max', 'Median', 'Min', 'Sum', 'Qu1', 'Qu3', 'NA']
+
+
+DECIMAL_EXPONENT = Decimal('.01')    # XXX let user change this
 
 
 class AggregationError(Exception):
@@ -45,6 +50,10 @@ class LazyCalculation(object):
                                    '"%s" data contains a non-numeric value. '
                                    'Original message: %s' % (self.agg.name(),
                                    self.agg.key, e.message))
+        #if isinstance(self.result, Decimal):
+        #    # we don't want tens of zeroes, do we
+        #    self.result = Decimal(self.result).quantize(DECIMAL_EXPONENT)
+        self.result = Decimal(self.result).quantize(DECIMAL_EXPONENT)
         return self.result
 
     def __int__(self):
@@ -129,13 +138,13 @@ class AggregateManager(Aggregate):
 class Avg(AggregateManager):
     @staticmethod
     def calc(values):
-        return float(sum(values, 0)) / len(values)
+        return Decimal(sum(values, 0)) / len(values)
 
 
 class Max(AggregateManager):
     @staticmethod
     def calc(values):
-        return max(values)
+        return str(max(values))  # str for later conversion to decimal
 
 
 class Median(AggregateManager):
@@ -146,6 +155,7 @@ class Median(AggregateManager):
     """
     @staticmethod
     def calc(values):
+        # TODO: force Decimal
         values = sorted(values)
         middle = len(values)>>1
         # when length is odd
@@ -157,7 +167,11 @@ class Median(AggregateManager):
             # it is the average of the two middle values
             lower = middle - 1
             upper = middle + 1
-            return sum(values[lower:upper]) / 2.0
+            _sum = sum(values[lower:upper])
+            if isinstance(_sum, Decimal):
+                return _sum / Decimal('2.0')
+            else:
+                return _sum / 2.0
 
 
 
