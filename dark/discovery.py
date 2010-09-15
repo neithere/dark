@@ -29,16 +29,75 @@ Usage example::
 """
 
 from docu import *
-from docu.validators import exists
 
 
 __all__ = [
+    'guess_doc_class',
     'field_frequency', 'print_field_frequency',
     'suggest_structures', 'print_suggest_structures',
     'document_factory'
 ]
 
 
+def guess_doc_class(data, classes, fit_whole_data=False, require_schema=False):
+    """
+    Returns the best matching document class from given list of classes for
+    given data dictionary. If no class matched the data, returns `None`.
+
+    :param data:
+        a dictionary.
+    :param classes:
+        a list of :class:`docu.Document` subclasses.
+    :param require_schema:
+        If `True`, classes with empty schemata are discarded. Default is
+        `False` because a document may have no schema but strict validators.
+    :param fit_whole_data:
+        if `True`, partial structural matches are discarded. Default is
+        `False`, i.e. it is OK for the document class to only support a subset
+        of fields found in the data dictionary.
+
+    The guess is based on: a) how well does the declared structure match given
+    dictionary, and b) does the resulting document validate or not. The classes
+    are sorted by structure similarity and then the first valid choice is
+    picked.
+    """
+    assert classes
+    assert hasattr(classes, '__iter__')
+    assert all(issubclass(cls, Document) for cls in classes)
+    assert isinstance(data, dict)
+
+    scores = {}
+    for cls in classes:
+        data_keys = set(data)
+        schema_keys = set(cls.meta.structure)
+        common_keys = schema_keys & data_keys
+        if not common_keys:
+            if schema_keys:
+                continue  # wrong schema
+            elif require_schema:
+                continue  # empty schema -- but it's not allowed
+        if fit_whole_data and data_keys - schema_keys:
+            # not all data keys are present in the schema
+            continue
+        diff_keys = schema_keys ^ data_keys
+        scores[cls] = len(common_keys) - len(diff_keys)
+
+    candidates = sorted(scores.iteritems(), key=lambda x:x[1], reverse=True)
+    for cls, score in candidates:
+        instance = cls()  # for validation method
+                          # TODO extract it to a standalone function?
+        valid = True
+        for field in cls.meta.structure:
+            # TODO using private method; make it public?
+            try:
+                instance._validate_value(field, data.get(field))
+            except validators.ValidationError:
+                valid = False
+                break
+        if valid:
+            # no validation errors for known fields, let's pick this class
+            return cls
+    return None
 
 def suggest_structures(query, having=None):
     """
@@ -64,12 +123,19 @@ def suggest_structures(query, having=None):
     return sorted(structures.iteritems(), key=lambda x:x[1], reverse=True)
 
 def print_suggest_structures(*args, **kwargs):
+    """
+    Prints nicely formatted output of :func:`suggest_structures`.
+    """
     results = suggest_structures(*args, **kwargs)
     for structure, frequency in results:
         print u'×{frequency:>5} ... {structure}'.format(
             frequency=frequency, structure=', '.join(structure))
 
 def field_frequency(query, having=None, raw=False):
+    """
+    Returns a list of pairs (field name, frequency) sorted by frequency in
+    given query (most frequent field is listed first).
+    """
     freqs = {}
     for document in query:
         data = document._saved_state.data if raw else document
@@ -81,6 +147,9 @@ def field_frequency(query, having=None, raw=False):
     return sorted(freqs.iteritems(), key=lambda x:x[1], reverse=True)
 
 def print_field_frequency(*args, **kwargs):
+    """
+    Prints nicely formatted output of :func:`field_frequency`.
+    """
     results = field_frequency(*args, **kwargs)
     for name, frequency in results:
         print u'×{frequency:>5} ... {name}'.format(**locals())
@@ -93,5 +162,5 @@ def document_factory(structure):
     # TODO: name it properly(?)
     class cls(Document):
         structure = dict.fromkeys(structure, unicode)
-        validators = dict.fromkeys(structure, [exists()])
+        validators = dict.fromkeys(structure, [validators.exists()])
     return cls
