@@ -13,18 +13,13 @@
 Discovery
 =========
 
-Analyzes a mixed dataset and suggests document structures.
+Tools to discover patterns in mixed data.
 
-Usage example::
+The module provides functions that allow to:
 
-    from docu import *
-    from dark import *
-
-    db = get_db(backend='docu.ext.tokyo_cabinet', path='foo.tct')
-    for structure in suggest_structures(db):
-        print structure
-        doc_cls = document_factory(structure)
-        print '  %d entries' % doc_cls.objects(db).count()
+a) analyze the storage and extract high-level information such as field
+   frequency and common structures;
+b) pick best document class for a dictionary.
 
 """
 
@@ -32,14 +27,15 @@ from docu import *
 
 
 __all__ = [
-    'guess_doc_class',
+    'suggest_document_class',
     'field_frequency', 'print_field_frequency',
     'suggest_structures', 'print_suggest_structures',
     'document_factory'
 ]
 
 
-def guess_doc_class(data, classes, fit_whole_data=False, require_schema=False):
+def suggest_document_class(data, classes, fit_whole_data=False,
+                           require_schema=False):
     """
     Returns the best matching document class from given list of classes for
     given data dictionary. If no class matched the data, returns `None`.
@@ -110,6 +106,18 @@ def suggest_structures(query, having=None):
     :param having:
         list of field names that must be present in each structure.
 
+    Usage example::
+
+        from docu import *
+        from dark import *
+
+        db = get_db(backend='docu.ext.tokyo_cabinet', path='foo.tct')
+        for structure in suggest_structures(db):
+            print structure
+            doc_cls = document_factory(structure)
+            print '  %d entries' % doc_cls.objects(db).count()
+
+    See also :func:`print_suggest_structures`.
     """
     structures = {}  #[]
     for d in query:
@@ -135,6 +143,8 @@ def field_frequency(query, having=None, raw=False):
     """
     Returns a list of pairs (field name, frequency) sorted by frequency in
     given query (most frequent field is listed first).
+
+    See also :func:`print_field_frequency`.
     """
     freqs = {}
     for document in query:
@@ -154,10 +164,31 @@ def print_field_frequency(*args, **kwargs):
     for name, frequency in results:
         print u'×{frequency:>5} ... {name}'.format(**locals())
 
-def document_factory(structure):
+def document_factory(structure, all_required=True):
     """
     Returns a :class:`docu.document_base.Document` subclass for given
-    structure including validators.
+    structure including validators. Please note that each field will get the
+    `unicode` data type. If you need a more precise
+
+    :param structure:
+        a list of keys. Any iterable will do. If it is a dictionary, only its
+        keys will be used.
+    :param all_required:
+        If `True` (default), the all fields in the structure are considered
+        mandatory and validator `Required` is added for each of them.
+
+    Here's a use case. Say, we have a dictionary `data` and we need to find all
+    documents with same fields::
+
+        # make a document class with vaidators
+        CustomDocument = document_factory(data)
+        # the validators will generate a query
+        similar_docs = CustomDocument.objects(storage)
+
+    Note that this does not yield documents with *exactly* the same structure:
+    it is only guaranteed that all fields present in `data` are also present in
+    these records. Neither does this method guarantee that the data types would
+    match.
     """
     # TODO: name it properly(?)
     class cls(Document):
