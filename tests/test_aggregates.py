@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import docu
+import doqu
 import os
 import unittest
 import yaml
@@ -11,7 +11,7 @@ from dark.aggregates import Avg, Count, Max, Median, Min, NA, Qu1, Qu3, Sum
 TMP_DB_PATH = '_test_aggregates.shelve'
 
 
-class Person(docu.Document):
+class Person(doqu.Document):
     def __unicode__(self):
         return u'{first_name} {last_name}'.format(
             first_name = self.get('first_name', '?'),
@@ -25,7 +25,7 @@ class AggregatesTestCase(unittest.TestCase):
     def setUp(self):
         assert not os.path.exists(TMP_DB_PATH), (
             'Sandbox file {0} must not exist'.format(os.path.abspath(TMP_DB_PATH)))
-        self.db = docu.get_db(backend='docu.ext.shelve_db', path=TMP_DB_PATH)
+        self.db = doqu.get_db(backend='doqu.ext.shelve_db', path=TMP_DB_PATH)
         for data in yaml.load(open('tests/people.yaml')):
             Person(**data).save(self.db)
         self.people = Person.objects(self.db)

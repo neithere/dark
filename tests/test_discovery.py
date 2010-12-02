@@ -2,7 +2,7 @@
 
 import unittest
 
-from docu import Document
+from doqu import Document
 from dark.discovery import suggest_document_class
 
 

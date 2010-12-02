@@ -4,18 +4,18 @@
 # This test is automatically discovered by nose.collector (provided that option
 # --with-doctest and --doctest-tests options are set).
 
-import docu
+import doqu
 import yaml
 
 
 TMP_DB_PATH = '_test_shaping.shelve'
 
 
-class CatchAll(docu.Document):
+class CatchAll(doqu.Document):
     pass
 
 
-class Person(docu.Document):
+class Person(doqu.Document):
     def __unicode__(self):
         return u'{first_name} {last_name}'.format(
             first_name = self.get('first_name', '?'),
@@ -23,7 +23,7 @@ class Person(docu.Document):
         )
 
 
-db = docu.get_db(backend='docu.ext.shelve_db', path=TMP_DB_PATH)
+db = doqu.get_db(backend='doqu.ext.shelve_db', path=TMP_DB_PATH)
 db.clear()
 
 raw_items = yaml.load(open('tests/people.yaml'))

@@ -23,7 +23,7 @@ b) pick best document class for a dictionary.
 
 """
 
-from docu import *
+from doqu import *
 
 
 __all__ = [
@@ -43,7 +43,7 @@ def suggest_document_class(data, classes, fit_whole_data=False,
     :param data:
         a dictionary.
     :param classes:
-        a list of :class:`docu.Document` subclasses.
+        a list of :class:`doqu.Document` subclasses.
     :param require_schema:
         If `True`, classes with empty schemata are discarded. Default is
         `False` because a document may have no schema but strict validators.
@@ -108,10 +108,10 @@ def suggest_structures(query, having=None):
 
     Usage example::
 
-        from docu import *
+        from doqu import *
         from dark import *
 
-        db = get_db(backend='docu.ext.tokyo_cabinet', path='foo.tct')
+        db = get_db(backend='doqu.ext.tokyo_cabinet', path='foo.tct')
         for structure in suggest_structures(db):
             print structure
             doc_cls = document_factory(structure)
@@ -166,7 +166,7 @@ def print_field_frequency(*args, **kwargs):
 
 def document_factory(structure, all_required=True):
     """
-    Returns a :class:`docu.document_base.Document` subclass for given
+    Returns a :class:`doqu.document_base.Document` subclass for given
     structure including validators. Please note that each field will get the
     `unicode` data type. If you need a more precise
 

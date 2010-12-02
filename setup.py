@@ -29,7 +29,7 @@ setup(
 
     provides     = ['dark'],
     obsoletes    = ['datashaping'],
-    requires     = ['python (>= 2.5)', 'docu (>= 0.20)'],
+    requires     = ['python (>= 2.5)', 'doqu (>= 0.25)'],
     test_requires = ['nose', 'pyyaml'],
 
     description  = 'Data Analysis and Reporting Kit (DARK)',
